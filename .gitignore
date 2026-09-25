@@ -1,0 +1,36 @@
+# Root-level ignores for the PUBLIC mirror.
+#
+# citoya-v2 (private) is the source of truth; this tree is written by
+# scripts/sync_portfolio.py. This file exists because the cold audit on
+# 2026-08-12 found this repo had NO .gitignore and NO commit gate — the two
+# independent safety nets both missing in the one repo where a mistake is
+# published and irreversible. frontend/ has its own .gitignore for build output.
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Secrets, in any directory. The sync should never place one here at all; these
+# rules are the backstop, not the plan.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa*
+*_keys.env
+secrets.*
+credentials*.json
+
+# Account data exports (GET /auth/me/export) — a real export carries a minor's
+# guardian name and email.
+*-data-export.json
+
+# Database backups (real user data)
+backups/
+
+# Generated / local state (regenerable — not source)
+graphify-out/
+.claude/pm-cadence.json

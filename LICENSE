@@ -1,0 +1,29 @@
+Copyright (c) 2026 Evan Daruwalla. All rights reserved.
+
+Citoya is published as a PORTFOLIO WORK, for reading and review.
+
+You may read this source and quote short excerpts with attribution — for
+example when evaluating the author's work.
+
+You may NOT copy, modify, redistribute, deploy, host, or otherwise use this
+software or any substantial part of it, in whole or in part, for any purpose,
+without prior written permission from the copyright holder.
+
+No license is granted by implication or otherwise. Nothing here is a waiver of
+any right.
+
+WHY THIS AND NOT A PERMISSIVE LICENSE. Citoya is a real, operable service
+that handles the personal data of MINORS: names, dates of birth, guardian email
+addresses, and verified service hours. An unmodified deployment of this code by
+a third party would collect that data from real children under someone else's
+control, with no guardian-consent process that this project's author can stand
+behind. Permissive reuse is therefore withheld on purpose, not by omission.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+For permission enquiries, contact the repository owner.

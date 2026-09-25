@@ -1,0 +1,14 @@
+# Keep the build context to source. Without this the context was ~860 MB
+# (.next 382 MB + node_modules 478 MB) versus a few MB of actual source, and the
+# host's node_modules was COPY'd over the clean `npm ci` layer — so a Linux image
+# could end up carrying Windows-built native binaries (audit 2026-08-11).
+# backend/ has had one of these since M10.1; frontend/ never got one.
+node_modules
+.next
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+.git
+.gitignore
+npm-debug.log*
