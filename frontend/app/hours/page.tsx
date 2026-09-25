@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError, api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
+import { CONSENT_GATED_COPY, consentGated } from "@/lib/consent";
 import { HOURS_STATUS_LABEL, HOURS_STATUS_PILL } from "@/lib/status";
 import { useAuthedQuery } from "@/lib/use-api";
 
@@ -17,6 +18,7 @@ const SOURCE_LABEL: Record<string, string> = { auto: "Auto-logged", self: "Self-
 export default function MyHoursPage() {
   const { user, loading } = useAuth();
   const isStudent = user?.role === "student";
+  const gated = consentGated(user); // K3: never send a write the gate refuses
   // Keys are shared with `/dashboard` (and `hours/mine` + `awards/my` with
   // `/portfolio`) — the same data behind one cache entry is the point of the key.
   const hoursQ = useAuthedQuery(isStudent ? "hours/mine" : null, (t) => api.listHours(t));
@@ -62,7 +64,7 @@ export default function MyHoursPage() {
   // never goes inside a fetcher".)
   const autoLogged = useRef(false);
   useEffect(() => {
-    if (loading || !isStudent || autoLogged.current) return;
+    if (loading || !isStudent || gated || autoLogged.current) return;
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return;
     autoLogged.current = true;
@@ -75,7 +77,7 @@ export default function MyHoursPage() {
         }
       })
       .catch(() => undefined);
-  }, [loading, isStudent, mutateHours, mutateAwards]);
+  }, [loading, isStudent, gated, mutateHours, mutateAwards]);
 
   /** The Retry button. Re-reads only — it must never POST. */
   function retryAll() {
@@ -216,10 +218,12 @@ export default function MyHoursPage() {
             <CardTitle className="text-lg">Log or check in</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
+            {gated && <p className="text-sm text-muted-foreground">{CONSENT_GATED_COPY}</p>}
             <form onSubmit={submitCheckin} className="flex flex-col gap-2">
-              <Label>Check in with a code</Label>
+              <Label htmlFor="hours-checkin-opportunity">Check in with a code</Label>
               <div className="flex gap-2">
                 <select
+                  id="hours-checkin-opportunity"
                   value={ciOpp}
                   onChange={(e) => setCiOpp(e.target.value)}
                   className="h-9 flex-1 rounded-md border border-input bg-transparent px-3 text-sm"
@@ -232,21 +236,23 @@ export default function MyHoursPage() {
                   ))}
                 </select>
                 <Input
+                  aria-label="Check-in code"
                   value={ciCode}
                   onChange={(e) => setCiCode(e.target.value)}
                   placeholder="CODE"
                   className="w-28 uppercase"
                 />
-                <Button type="submit" size="sm" disabled={submitting || !ciOpp || !ciCode}>
+                <Button type="submit" size="sm" disabled={gated || submitting || !ciOpp || !ciCode}>
                   Check in
                 </Button>
               </div>
             </form>
 
             <form onSubmit={submitSelfReport} className="flex flex-col gap-2 border-t pt-4">
-              <Label>Self-report hours</Label>
+              <Label htmlFor="hours-selfreport-opportunity">Self-report hours</Label>
               <div className="flex gap-2">
                 <select
+                  id="hours-selfreport-opportunity"
                   value={srOpp}
                   onChange={(e) => setSrOpp(e.target.value)}
                   className="h-9 flex-1 rounded-md border border-input bg-transparent px-3 text-sm"
@@ -259,6 +265,7 @@ export default function MyHoursPage() {
                   ))}
                 </select>
                 <Input
+                  aria-label="Hours to report"
                   type="number"
                   min={0.5}
                   step={0.5}
@@ -266,7 +273,7 @@ export default function MyHoursPage() {
                   onChange={(e) => setSrHours(Number(e.target.value))}
                   className="w-20"
                 />
-                <Button type="submit" size="sm" disabled={submitting || !srOpp}>
+                <Button type="submit" size="sm" disabled={gated || submitting || !srOpp}>
                   Submit
                 </Button>
               </div>

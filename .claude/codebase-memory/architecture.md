@@ -111,10 +111,14 @@ Three layers in `core/events.py`, deliberately separable:
   alembic on boot" claim): backend/Dockerfile CMD is uvicorn-only; `alembic upgrade head` runs via
   docker-compose's `command:` override locally, and via `deploy.preDeployCommand` in
   `backend/railway.json` on Railway. Any OTHER deploy target must wire migrations explicitly.
+  **2026-09-24 (record BH): `railway.json` is ignored on Railway now** - Config as Code is closed
+  to services created after 2026-08-28, so the staging `api` runs `alembic upgrade head` as a
+  pre-deploy step set by hand in the dashboard (see the banner atop `docs/DEPLOY_RAILWAY.md`).
 - **Docker IS available in the dev session now** (2026-07-13; the old "no Docker in dev" note is
   obsolete). Iterate with `docker compose build web && docker compose up -d web` (rebuild the image —
   the web/api images bake code at build time, so a rebuild is required to pick up changes).
   All services back: `docker compose up -d`.
 - Runbooks: `docs/DEPLOY.md` (compose) + `docs/DEPLOY_RAILWAY.md` (Railway config-as-code,
-  2026-07-16 — per-service railway.json, DATABASE_URL needs `postgresql+psycopg://` scheme);
+  2026-07-16 — per-service railway.json, DATABASE_URL needs `postgresql+psycopg://` scheme;
+  config-as-code no longer applies since 2026-09-24, record BH - dashboard settings instead);
   secret inventory: `docs/API_KEYS.md` (registry only, never values).

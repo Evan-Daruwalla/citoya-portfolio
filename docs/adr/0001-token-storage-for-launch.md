@@ -15,8 +15,9 @@ Verified reality of the current scheme in **this** codebase:
 
 > **Line numbers below were accurate when this ADR was written (2026-07-16) and
 > have since drifted; the file and symbol names still hold.** Verified 2026-09-03:
-> the TTL is `ACCESS_TOKEN_EXPIRE_MINUTES` in `config.py` (cited `:29`, now `:57`),
-> and rate limits are `RATE_LIMIT_AUTH_PER_MIN` (cited `:50`, now `:104`). **One is
+> the TTL is `ACCESS_TOKEN_EXPIRE_MINUTES` in `config.py` (cited `:29`~~, now `:57`~~),
+> and rate limits are `RATE_LIMIT_AUTH_PER_MIN` (cited `:50`~~, now `:104`~~) (2026-09-24,
+> audit: both "now" lines had drifted again; find each constant by name). **One is
 > wrong about the FILE, not just the line:** `TOKEN_KEY` is no longer defined in
 > `frontend/lib/auth-context.tsx` — it moved to `frontend/lib/api.ts` and is only
 > imported and re-exported there. Prefer the symbol over the line when following
@@ -27,9 +28,12 @@ Verified reality of the current scheme in **this** codebase:
   `ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days`
   (`backend/app/core/config.py:29`). There is **no refresh token**.
 - **Storage + transport (client).** Token is written to `localStorage` under
-  `servelocal_token` (`frontend/lib/auth-context.tsx:16`, set at `:58`, read at
-  `:44`/`:68`) and attached as `Authorization: Bearer ${token}` in the fetch
-  wrapper (`frontend/lib/api.ts:48`). Every authed API method takes the token as an
+  ~~`servelocal_token` (`frontend/lib/auth-context.tsx:16`, set at `:58`, read at
+  `:44`/`:68`)~~ `citoya_token` (2026-09-24, audit: the key was renamed in the in-repo
+  rename, root record BA; it is `TOKEN_KEY` in `frontend/lib/api.ts`, set by `login`
+  and read on mount in `frontend/lib/auth-context.tsx`) and attached as
+  `Authorization: Bearer ${token}` in the fetch wrapper (~~`frontend/lib/api.ts:48`~~
+  `request` in `frontend/lib/api.ts`). Every authed API method takes the token as an
   explicit argument.
 - **Server-side invalidation.** `token_version` (int on `User`) is embedded as JWT
   claim `tv` and compared in `get_current_user` (`backend/app/api/deps.py:32`). It
@@ -175,7 +179,8 @@ this ADR task (backend config is being edited concurrently by another worker).
    at `backend/app/api/routes/auth.py:307`, checked at `backend/app/api/deps.py:32`)
    so "log out" actually kills the token — important on shared machines.
 3. **Logout-on-401 interceptor.** In the fetch wrapper's error branch
-   (`frontend/lib/api.ts:53`), on a 401 clear `servelocal_token` and route to login,
+   (~~`frontend/lib/api.ts:53`~~ `request` in `frontend/lib/api.ts`), on a 401 clear
+   ~~`servelocal_token`~~ `citoya_token` (2026-09-24, audit: renamed, root record BA) and route to login,
    reusing `auth-context.tsx`'s `logout()`. Prevents a rejected/expired token from
    lingering in a confusing half-logged-in state (and pairs with #1's shorter TTL).
 4. **Future — refresh-token rotation.** If/when session UX needs silent renewal,
@@ -200,7 +205,7 @@ Each line below was checked against the source, not against HANDOFF.
 |---|---|---|
 | 1 | Tighten access-token TTL | **DONE** — 7 days → **24h**, `config.py` `ACCESS_TOKEN_EXPIRE_MINUTES = Field(default=60 * 24, ge=1)` (2026-08-05 audit). The `ge=1` bound is new too: a 0/negative value minted already-expired tokens. |
 | 2 | Server-side logout invalidation | **DONE** — `POST /auth/logout` bumps `token_version` (`logout` in `auth.py`), checked in `get_current_user` (`deps.py`). Logging out now genuinely kills the token, which was the shared-machine gap. |
-| 3 | Logout-on-401 interceptor | **DONE** — `frontend/lib/api.ts:66` clears the token and routes to login on a 401 that carried a token. Tokenless 401s (a failed login) correctly clear nothing. |
+| 3 | Logout-on-401 interceptor | **DONE** — ~~`frontend/lib/api.ts:66`~~ `request` in `frontend/lib/api.ts` (2026-09-24, audit: line refs dropped) clears the token and routes to login on a 401 that carried a token. Tokenless 401s (a failed login) correctly clear nothing. |
 | 4 | Refresh-token rotation | **NOT DONE, post-launch by design.** Unchanged. |
 | 5 | Shared-store rate limiter | **DONE 2026-09-05/06** (added 2026-09-22; the text after this note is the earlier status, kept): the limiter moved to Postgres (`rate_limit_hits`, migration 0027) and the throttles followed (`throttle_state`, 0028), shared across instances. Earlier status: **NOT DONE.** Still single-process in-memory (`core/rate_limit.py`). A key-eviction sweep was added 2026-08-05 (an IPv6 /64 scan grew `_hits` without bound), but a multi-process deploy still needs Redis. **Relevant to Railway: more than one replica silently multiplies every rate limit by the replica count.** |
 

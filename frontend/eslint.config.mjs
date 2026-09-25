@@ -26,7 +26,12 @@ const config = [
       // that fell out), so it stays spread in after the Next config.
       ...jsxA11y.flatConfigs.recommended.rules,
       // The v1 forms label controls by wrapping OR by htmlFor; either is fine.
-      "jsx-a11y/label-has-associated-control": ["error", { assert: "either" }],
+      // `labelComponents`: the rule saw only a lowercase <label>, so every shadcn
+      // <Label> went unchecked (audit 2026-09-24, F13).
+      "jsx-a11y/label-has-associated-control": [
+        "error",
+        { assert: "either", labelComponents: ["Label"] },
+      ],
 
       // --- React Compiler rules, new in eslint-plugin-react-hooks v7 ---
       // The Next 15->16 bump took this plugin from v5 to v7, which added rules

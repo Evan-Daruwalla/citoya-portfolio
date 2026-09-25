@@ -5,7 +5,8 @@ import { useEffect, useState, type FormEvent } from "react";
 
 import { ReportConcern } from "@/components/report-concern";
 import { ApiError, api } from "@/lib/api";
-import { TOKEN_KEY } from "@/lib/auth-context";
+import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
+import { consentGated } from "@/lib/consent";
 import type { Message } from "@/lib/types";
 
 /** Renders only if the current user can access the thread (org owner or an applicant).
@@ -21,6 +22,8 @@ export function MessagesSection({
   opportunityId: string;
   canPost: boolean;
 }) {
+  const { user } = useAuth();
+  const blocked = !canPost && consentGated(user); // F12: the server refuses it anyway
   const [messages, setMessages] = useState<Message[] | null>(null);
   const [visible, setVisible] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -116,7 +119,7 @@ export function MessagesSection({
             <span style={{ fontWeight: 600 }}>{m.sender_name}:</span> <span>{m.body}</span>
           </div>
         ))}
-        {!canPost && (
+        {!canPost && !blocked && (
           <p className="progress-label" style={{ marginTop: 0 }}>
             Only the organization posts here. Ask it a question privately below — replies arrive in your{" "}
             <Link href="/inbox" style={{ color: "var(--green)" }}>inbox</Link>.
@@ -131,13 +134,14 @@ export function MessagesSection({
             style={{ flex: 1, cursor: "text" }}
             value={body}
             onChange={(e) => setBody(e.target.value)}
+            disabled={blocked}
             placeholder={canPost ? "Write a message…" : "Ask the organization privately…"}
             aria-label={canPost ? "Message your volunteers" : "Private message to the organization"}
           />
           <button
             className="btn-p"
             type="submit"
-            disabled={submitting || !body.trim()}
+            disabled={blocked || submitting || !body.trim()}
             style={{ padding: "9px 18px", fontSize: ".83rem" }}
           >
             Send

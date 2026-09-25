@@ -69,6 +69,13 @@ export function eventDateKey(iso: string, timeZone: string): string {
   );
 }
 
+/** Calendar days from today to the event's date, both dates in the EVENT's zone (F22:
+ *  a raw millisecond difference called a 9 AM event "Today" at 10 PM the night before). */
+export function daysUntilEventDate(iso: string, timeZone: string, now: Date = new Date()): number {
+  const day = (key: string) => Date.parse(`${key}T00:00:00Z`);
+  return Math.round((day(eventDateKey(iso, timeZone)) - day(eventDateKey(now.toISOString(), timeZone))) / 86400000);
+}
+
 /** A local calendar-cell date as the same kind of key. */
 export function localDateKey(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, "0");

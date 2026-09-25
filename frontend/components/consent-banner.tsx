@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { ApiError, api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
+import { CONSENT_GATED_COPY, consentGated } from "@/lib/consent";
 
 /** Shown to a signed-in student who isn't yet consent-cleared (pending/declined/
  *  revoked). Lets them resend the guardian email and re-check their status. */
@@ -13,9 +14,10 @@ export function ConsentBanner() {
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  if (!user || user.role !== "student") return null;
+  // The backend's rule (live age from dob), not the stored status alone: a pending
+  // student who has turned 18 is not gated, so is not told to wait.
+  if (!user || !consentGated(user)) return null;
   const status = user.guardian_consent_status;
-  if (status === "not_required" || status === "verified") return null;
 
   async function resend() {
     setBusy(true);
@@ -48,8 +50,7 @@ export function ConsentBanner() {
         {heading}
       </h4>
       <p>
-        You can browse opportunities, but you can&apos;t sign up until a parent or guardian approves
-        your account.
+        {CONSENT_GATED_COPY}
         {/* The spam line (pre-mortem 2026-09-22, T5): a new domain sending "approve your
             student's account" with a link looks like phishing, and a spam-foldered
             invite is invisible to us. The family is the only one who can look. */}

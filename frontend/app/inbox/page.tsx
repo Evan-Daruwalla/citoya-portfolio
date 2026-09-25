@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
+import { consentGated } from "@/lib/consent";
 import { useAuthedQuery } from "@/lib/use-api";
 
 export default function InboxPage() {
   const { user, loading } = useAuth();
+  const gated = consentGated(user); // F12: replying is consent-gated server-side
   const {
     data: messages,
     loading: fetching,
@@ -54,6 +56,11 @@ export default function InboxPage() {
         <p className="text-sm text-muted-foreground">
           Got a message that worries you? <ReportConcern subject="Report a message in my inbox" label="Report it" />.
         </p>
+        {gated && (
+          <p className="text-sm text-muted-foreground">
+            You can read messages, but you can&apos;t reply until a parent or guardian approves your account.
+          </p>
+        )}
       </div>
 
       {fetching && <p className="empty-state">Loading…</p>}
@@ -102,6 +109,7 @@ export default function InboxPage() {
                 </div>
               ) : (
                 <button
+                  disabled={gated}
                   onClick={() => {
                     setReplyTo(m.id);
                     setReplyBody("");

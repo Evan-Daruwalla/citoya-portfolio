@@ -46,9 +46,11 @@ the `#fragment`, read with `useSyncExternalStore`). Dynamic route params use `us
   one-spot listing both read `> 0`, both wrote `0`, both committed an approved
   application — two students holding one physical seat, with a counter that looks
   plausible afterwards so nothing alerts.
-- Four fetch sites are locked (apply, withdraw, org decide, guardian revoke) and
+- ~~Four fetch sites are locked (apply, withdraw, org decide, guardian revoke) and
   `tests/test_capacity_locking.py` pins that count at 4, so a fifth spots-touching
-  path cannot quietly skip it. `promote_from_waitlist` is NOT one of them — it
+  path cannot quietly skip it.~~ Since 2026-09-24 (audit F6) `tests/test_capacity_locking.py`
+  scans every routes and services file and pins a count per file: the org-rejection path in
+  `admin.py` was a fifth locked site the old 3-file scan could not see. `promote_from_waitlist` is NOT one of them — it
   receives an already-loaded `opp`, so its caller owns the lock.
 - **`FOR UPDATE` is a no-op on SQLite**, so the race is still reproducible in the
   default suite; see `testing.md`.

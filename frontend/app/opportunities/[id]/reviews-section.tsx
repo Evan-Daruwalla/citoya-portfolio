@@ -6,6 +6,7 @@ import { WifiOff } from "lucide-react";
 
 import { ApiError, api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
+import { consentGated } from "@/lib/consent";
 import { usePublicQuery } from "@/lib/use-api";
 
 export function ReviewsSection({ orgId }: { orgId: string }) {
@@ -85,7 +86,7 @@ export function ReviewsSection({ orgId }: { orgId: string }) {
           </div>
         ))}
 
-        {user?.role === "student" && (
+        {user?.role === "student" && !consentGated(user) && (
           <form
             onSubmit={onSubmit}
             style={{ display: "flex", flexDirection: "column", gap: 10, borderTop: "1px solid var(--border)", paddingTop: 16 }}

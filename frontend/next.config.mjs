@@ -10,6 +10,9 @@
 const nextConfig = {
   // Emit a self-contained server bundle (.next/standalone) for a small Docker image (M10.1).
   output: "standalone",
+  // No `x-powered-by: Next.js`: it names the framework to every scanner and helps
+  // nobody (staging sent it, audit 2026-09-24, F21).
+  poweredByHeader: false,
   async headers() {
     return [
       {

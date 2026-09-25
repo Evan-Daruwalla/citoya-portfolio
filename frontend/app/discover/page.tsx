@@ -9,7 +9,7 @@ import { CategoryIcon, getCategoryMeta } from "@/components/v1/category-icon";
 import { V1Shell } from "@/components/v1/v1-shell";
 import { api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
-import { eventInstant, fmtEventDate } from "@/lib/event-time";
+import { daysUntilEventDate, eventInstant, fmtEventDate } from "@/lib/event-time";
 import { useAuthedQuery, usePublicQuery } from "@/lib/use-api";
 import type { Opportunity } from "@/lib/types";
 
@@ -19,8 +19,7 @@ const COMMITMENT: Record<string, string> = { one_time: "One-time", weekly: "Week
 function relDate(iso: string, timeZone: string): string {
   const d = eventInstant(iso);
   if (Number.isNaN(d.getTime())) return "";
-  const now = new Date();
-  const days = Math.round((d.getTime() - now.getTime()) / 86400000);
+  const days = daysUntilEventDate(iso, timeZone);
   if (days === 0) return "Today";
   if (days === 1) return "Tomorrow";
   if (days > 1 && days < 7) return `In ${days} days`;

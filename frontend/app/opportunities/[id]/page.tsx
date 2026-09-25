@@ -9,6 +9,7 @@ import { ReportConcern } from "@/components/report-concern";
 import { V1Shell } from "@/components/v1/v1-shell";
 import { ApiError, api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
+import { CONSENT_GATED_COPY, consentGated } from "@/lib/consent";
 import { fmtEventDateTime } from "@/lib/event-time";
 import { usePublicQuery } from "@/lib/use-api";
 import { MessagesSection } from "./messages-section";
@@ -32,10 +33,12 @@ export default function OpportunityDetailPage() {
   //
   // Passing it at all is new (2026-09-20, M15.1): this call sent no Authorization
   // header, so the backend's viewer-dependent branches were dead in the browser.
-  // Known limit: the SWR key does not include the token, so a signed-out 404
-  // stays cached until something revalidates it — `retry()` clears it.
+  // The key carries WHO is asking (F23, audit 2026-09-24): the answer is viewer-
+  // dependent (an owner sees an unapproved listing, everyone else a 404), so a
+  // signed-out 404 must not be served to the signed-in owner from cache. `user`,
+  // not the token, because the token must not be read during render.
   const { data: opp, loading, error, retry } = usePublicQuery(
-    `opportunities/${params.id}`,
+    `opportunities/${params.id}:${user?.id ?? "anon"}`,
     () => api.getOpportunity(params.id, localStorage.getItem(TOKEN_KEY) ?? undefined),
   );
   // The WRITE's error is kept separate from the LOAD's. One `error` string used
@@ -149,7 +152,12 @@ export default function OpportunityDetailPage() {
                 </>
               )}
 
-              {user?.role === "student" && <SignupSection opp={opp} onChange={retry} />}
+              {user?.role === "student" &&
+                (consentGated(user) ? (
+                  <p className="progress-label">{CONSENT_GATED_COPY}</p>
+                ) : (
+                  <SignupSection opp={opp} onChange={retry} />
+                ))}
             </div>
           </div>
 

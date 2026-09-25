@@ -9,6 +9,7 @@ import { ConsentBanner } from "@/components/consent-banner";
 import { V1Shell } from "@/components/v1/v1-shell";
 import { ApiError, api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
+import { consentGated } from "@/lib/consent";
 import { eventDateKey, localDateKey } from "@/lib/event-time";
 import { HOURS_STATUS_LABEL_COMPACT, HOURS_STATUS_PILL } from "@/lib/status";
 import { useAuthedQuery } from "@/lib/use-api";
@@ -35,6 +36,7 @@ export default function DashboardPage() {
   // and `awards/my` with /portfolio, `applications/my` with /applications,
   // `saved` with /saved) — that shared cache entry is the point of the key.
   const isStudent = user?.role === "student";
+  const gated = consentGated(user); // K3: never send a write the gate refuses (auto-log 403'd)
   const hoursQ = useAuthedQuery(isStudent ? "hours/mine" : null, (t) => api.listHours(t));
   const awardsQ = useAuthedQuery(isStudent ? "awards/my" : null, (t) => api.myAwards(t));
   const appsQ = useAuthedQuery(isStudent ? "applications/my" : null, (t) => api.myApplications(t));
@@ -81,7 +83,7 @@ export default function DashboardPage() {
   const { mutate: mutateHours } = hoursQ;
   const { mutate: mutateAwards } = awardsQ;
   useEffect(() => {
-    if (loading || !isStudent || autoLogged.current) return;
+    if (loading || !isStudent || gated || autoLogged.current) return;
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return;
     autoLogged.current = true;
@@ -93,7 +95,7 @@ export default function DashboardPage() {
         }
       })
       .catch(() => undefined);
-  }, [loading, isStudent, mutateHours, mutateAwards]);
+  }, [loading, isStudent, gated, mutateHours, mutateAwards]);
 
   const stats = useMemo(() => {
     let verified = 0, pending = 0, total = 0;
@@ -349,8 +351,8 @@ export default function DashboardPage() {
                           <option value="">Opportunity…</option>
                           {oppOptions.map((o) => <option key={o.id} value={o.id}>{o.title}</option>)}
                         </select>
-                        <input className="fsel" style={{ width: 110, textTransform: "uppercase" }} value={ciCode} onChange={(e) => setCiCode(e.target.value)} placeholder="CODE" />
-                        <button className="btn-p" type="submit" style={{ padding: "9px 18px", fontSize: ".82rem" }} disabled={submitting || !ciOpp || !ciCode}>Check in</button>
+                        <input className="fsel" aria-label="Check-in code" style={{ width: 110, textTransform: "uppercase" }} value={ciCode} onChange={(e) => setCiCode(e.target.value)} placeholder="CODE" />
+                        <button className="btn-p" type="submit" style={{ padding: "9px 18px", fontSize: ".82rem" }} disabled={gated || submitting || !ciOpp || !ciCode}>Check in</button>
                       </div>
                     </form>
                   </div>
@@ -362,8 +364,8 @@ export default function DashboardPage() {
                           <option value="">Opportunity…</option>
                           {oppOptions.map((o) => <option key={o.id} value={o.id}>{o.title}</option>)}
                         </select>
-                        <input className="fsel" style={{ width: 80 }} type="number" min={0.5} step={0.5} value={srHours} onChange={(e) => setSrHours(Number(e.target.value))} />
-                        <button className="btn-p" type="submit" style={{ padding: "9px 18px", fontSize: ".82rem" }} disabled={submitting || !srOpp}>Submit</button>
+                        <input className="fsel" aria-label="Hours to report" style={{ width: 80 }} type="number" min={0.5} step={0.5} value={srHours} onChange={(e) => setSrHours(Number(e.target.value))} />
+                        <button className="btn-p" type="submit" style={{ padding: "9px 18px", fontSize: ".82rem" }} disabled={gated || submitting || !srOpp}>Submit</button>
                       </div>
                     </form>
                   </div>

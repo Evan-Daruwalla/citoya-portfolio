@@ -7,8 +7,8 @@ Last updated 2026-09-03.
   2026-07-12 — full stack boots, migrations applied on real Postgres), **M12 v1 visual parity**
   (2026-07-12), and two off-roadmap Evan-directed 2026-07-13 blocks: **v1 EXACT-COPY** (all 13
   screens rebuilt in the scoped `.v1` architecture — see architecture.md/conventions.md) and a
-  **public-portfolio slice**. **516 collected (511 passed + 5 skipped on SQLite; 516 passed on Postgres), migrations 0001–0032 (2026-09-23 ~22:20 CDT;
-  supersedes 513 of 21:08, 512 of ~20:58, 509 of ~20:45, 508 of ~16:20, 507 of ~15:48 the same day and 454/0001–0029 of 2026-09-20, which superseded the 327/0001–0024 figure of 2026-08-19, which superseded 189/0001–0021). M11 launch = BLOCKED-ON-EVAN (host, domain/DNS, prod
+  **public-portfolio slice**. **578 collected (573 passed + 5 skipped on SQLite; 578 passed on Postgres), migrations 0001–0032 (2026-09-24 ~23:49 CDT, record BR;
+  supersedes 542 of ~22:43 (BQ), 533 of ~21:09 (BJ), 516 of 2026-09-23 ~22:20 CDT, 513 of 21:08, 512 of ~20:58, 509 of ~20:45, 508 of ~16:20, 507 of ~15:48 the same day and 454/0001–0029 of 2026-09-20, which superseded the 327/0001–0024 figure of 2026-08-19, which superseded 189/0001–0021). M11 launch = BLOCKED-ON-EVAN (host, domain/DNS, prod
   secrets, Resend key, Turnstile key, SUPPORT_EMAIL, legal).**
 - **M13 / M14 (added 2026-09-02).** This section stopped at M9/M10/M12 while INDEX.md
   routed every reader here for milestone status — so a session following INDEX's own
@@ -37,7 +37,7 @@ Last updated 2026-09-03.
 - **Org sees applicant identity (2026-07-13):** `student_name`/`student_email` are populated on
   `GET /applications/org` and the org branch of `GET /hours` ONLY (None on a student's own lists) —
   org-scoped v1 parity, no public exposure. Applying is consent-gated, so a minor was consented
-  WHEN they applied — but a later revoke keeps the row as `withdrawn` (`_withdraw_from_rosters`),
+  WHEN they applied — but a later revoke keeps the row as `withdrawn` (`withdraw_from_rosters`, in `services/enrollment.py` since 2026-09-24),
   so presence here does NOT imply current consent (corrected 2026-09-22). CSV roster export
   includes them.
 - **`GET /opportunities/mine` (2026-07-13):** org-only; returns the org's OWN listings INCLUDING

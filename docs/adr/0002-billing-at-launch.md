@@ -16,7 +16,9 @@ deferred — and the deciding constraint is Evan's age.
 > file and symbol names still hold.** Verified 2026-09-03: the two 503 guards are
 > at `billing.py:32` and `:66` (cited `:29-30` and `:61-62`), the webhook's
 > event-type branches at `:90-132` (cited `:73-88`), and `STRIPE_PRO_PRICE_CENTS`
-> at `config.py:83` (cited `:44`, which is now a closing paren). The $19-vs-$29
+> at ~~`config.py:83`~~ its own name in `config.py` (cited `:44`, which is now a closing
+> paren; 2026-09-24, audit: `:83` had drifted too, so find the price by name - the
+> pricing page's Pro price with `grep -n "/ month" frontend/app/pricing/page.tsx`). The $19-vs-$29
 > discrepancy this ADR flags was re-checked on disk and is still open.
 
 ### The age constraint
@@ -223,7 +225,7 @@ below).
     launch shouldn't sell a plan that can't be purchased.
   - **Price mismatch to fix regardless:** the pricing page says **$19/mo** while
     `STRIPE_PRO_PRICE_CENTS` defaults to **2900 ($29/mo)**
-    (`config.py:44`). Whatever the launch decision, these two numbers must agree
+    (~~`config.py:44`~~ `config.py`, by name; 2026-09-24, audit). Whatever the launch decision, these two numbers must agree
     before any Pro price is shown or charged.
 - **Launch-UI options for Evan (follow-up decision — NOT implemented in this
   ADR):**
@@ -253,8 +255,9 @@ below).
    The natural gate signal is "is `STRIPE_SECRET_KEY` set" surfaced to the
    frontend (needs a small public config/endpoint, or a build-time env var).
 2. **Reconcile the Pro price.** `STRIPE_PRO_PRICE_CENTS` = 2900 ($29) in
-   `backend/app/core/config.py:44` vs. "$19 / month" in
-   `frontend/app/pricing/page.tsx:56`. Set both to the real launch price before
+   ~~`backend/app/core/config.py:44`~~ `backend/app/core/config.py` vs. "$19 / month" in
+   ~~`frontend/app/pricing/page.tsx:56`~~ `frontend/app/pricing/page.tsx` (2026-09-24, audit:
+   both line refs had drifted; find each by the name or text quoted here). Set both to the real launch price before
    any Pro pricing is displayed or charged. **BLOCKED-ON-EVAN** (Evan sets the
    real price).
 3. **When live billing is enabled** (Evan 18, or guardian-held): set
