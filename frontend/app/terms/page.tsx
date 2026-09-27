@@ -101,7 +101,7 @@ export default function TermsPage() {
           <h3>Organization subscriptions &amp; billing</h3>
           <p><strong>Students never pay.</strong> Paid plans apply only to organizations. Organizations may use Citoya on the free Community plan or subscribe to a paid <strong>Pro</strong> plan; current plan features and prices are listed on the <Link href="/pricing">Pricing</Link> page. Pro is billed as a recurring <strong>monthly</strong> subscription through our payment processor, Stripe, and renews automatically each month until cancelled.</p>
           <ul>
-            <li><strong>Fulfillment.</strong> Pro features (such as unlimited and featured listings, and roster export) activate <strong>immediately upon successful payment</strong> and remain available for the paid billing period.</li>
+            <li><strong>Fulfillment.</strong> Pro features (such as unlimited and featured listings) activate <strong>immediately upon successful payment</strong> and remain available for the paid billing period.</li>
             <li><strong>Cancellation &amp; refunds.</strong> You can cancel Pro at any time. Cancellation takes effect at the <strong>end of the current billing period</strong>: your Pro features remain active until then, and your subscription does not renew for the next period. Payments already made for the current or past periods are <strong>non-refundable</strong>, and we do not provide prorated or partial refunds, except where required by law.</li>
             <li><strong>Price &amp; tax changes.</strong> We may change subscription prices or features prospectively; we&rsquo;ll give notice before a change affects your next renewal. You are responsible for any applicable taxes.</li>
           </ul>

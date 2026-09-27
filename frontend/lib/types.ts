@@ -164,6 +164,8 @@ export interface Review {
   rating: number;
   text: string;
   created_at: string;
+  // True only for the signed-in author; the listing sets it from an optional token.
+  mine: boolean;
 }
 
 export interface OrgReviews {

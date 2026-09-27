@@ -7,8 +7,8 @@ Last updated 2026-09-03.
   2026-07-12 — full stack boots, migrations applied on real Postgres), **M12 v1 visual parity**
   (2026-07-12), and two off-roadmap Evan-directed 2026-07-13 blocks: **v1 EXACT-COPY** (all 13
   screens rebuilt in the scoped `.v1` architecture — see architecture.md/conventions.md) and a
-  **public-portfolio slice**. **578 collected (573 passed + 5 skipped on SQLite; 578 passed on Postgres), migrations 0001–0032 (2026-09-24 ~23:49 CDT, record BR;
-  supersedes 542 of ~22:43 (BQ), 533 of ~21:09 (BJ), 516 of 2026-09-23 ~22:20 CDT, 513 of 21:08, 512 of ~20:58, 509 of ~20:45, 508 of ~16:20, 507 of ~15:48 the same day and 454/0001–0029 of 2026-09-20, which superseded the 327/0001–0024 figure of 2026-08-19, which superseded 189/0001–0021). M11 launch = BLOCKED-ON-EVAN (host, domain/DNS, prod
+  **public-portfolio slice**. **589 collected (584 passed + 5 skipped on SQLite; 589 passed on Postgres), migrations 0001–0032 (2026-09-26 ~01:14 CDT, record BV;
+  supersedes 588 of ~00:40 (BU), 582 of 2026-09-25 ~22:06 (BS), 578 of 2026-09-24 ~23:49 (BR), 542 of ~22:43 (BQ), 533 of ~21:09 (BJ), 516 of 2026-09-23 ~22:20 CDT, 513 of 21:08, 512 of ~20:58, 509 of ~20:45, 508 of ~16:20, 507 of ~15:48 the same day and 454/0001–0029 of 2026-09-20, which superseded the 327/0001–0024 figure of 2026-08-19, which superseded 189/0001–0021). M11 launch = BLOCKED-ON-EVAN (host, domain/DNS, prod
   secrets, Resend key, Turnstile key, SUPPORT_EMAIL, legal).**
 - **M13 / M14 (added 2026-09-02).** This section stopped at M9/M10/M12 while INDEX.md
   routed every reader here for milestone status — so a session following INDEX's own
@@ -43,6 +43,20 @@ Last updated 2026-09-03.
 - **`GET /opportunities/mine` (2026-07-13):** org-only; returns the org's OWN listings INCLUDING
   inactive/expired (the public list filters `active`). Declared BEFORE `/{opportunity_id}` so "mine"
   isn't captured as an id. Powers the org dashboard's My Listings + Listing History.
+- **Org listing Deactivate / Reactivate (2026-09-25, M11 item 8):** a button on each card in
+  My Listings, and Deactivate only on Listing History cards, calls
+  `PATCH /opportunities/{id}/active` (`api.setActive`). Account deletion refuses while any
+  listing is active, expired ones included, and until this button nothing in the UI could
+  deactivate one, so an org could not delete its account in-app.
+- **Review takedown (2026-09-26, feature inventory #10, option B):** the author or an admin can
+  delete a review (`DELETE /orgs/{org_id}/reviews/{review_id}`, 204); the reviewed org gets 403.
+  The public listing marks the signed-in caller's own review (`mine`, optional token), and the
+  page offers "Delete my review" or, for an admin, "Remove (admin)". Since 2026-09-26 (BW)
+  every review but your own also has a "Report" link: the same `ReportConcern` mailto to
+  support as listings and messages, handled under `docs/SUPPORT_PROCEDURES.md` P5.
+- **Roster CSV export is free for every org (2026-09-26, #8 option A).** The pricing page, the
+  terms and the dashboard upgrade copy used to sell it as Pro. It is built in the browser from
+  data the org already loads, so a plan gate would have enforced nothing.
 - Hardening (M9): (M9.1) `RateLimitMiddleware` (`app/core/rate_limit.py`) — 60s window per
   (IP, bucket): WRITES under `/auth/` 30/min + other writes 120/min; reads free (`GET /auth/me` too, since 2026-09-22 — T1); 429 + Retry-After;
   config `RATE_LIMIT_*`; added before CORS; `reset()` called per test in conftest.

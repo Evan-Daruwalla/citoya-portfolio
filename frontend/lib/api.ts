@@ -282,7 +282,11 @@ export const api = {
   publicPortfolio: (userId: string) => request<PublicPortfolio>(`/portfolio/${userId}`),
 
   // ── Reviews ──
-  orgReviews: (orgId: string) => request<OrgReviews>(`/orgs/${orgId}/reviews`),
+  // The token is optional: the listing is public, and with one it marks the caller's own review.
+  orgReviews: (orgId: string, token?: string) =>
+    request<OrgReviews>(`/orgs/${orgId}/reviews`, { token }),
+  deleteReview: (orgId: string, reviewId: string, token: string) =>
+    request<void>(`/orgs/${orgId}/reviews/${reviewId}`, { method: "DELETE", token }),
   createReview: (orgId: string, input: { rating: number; text: string }, token: string) =>
     request<Review>(`/orgs/${orgId}/reviews`, { method: "POST", body: JSON.stringify(input), token }),
 
@@ -348,6 +352,12 @@ export const api = {
     request<Opportunity>(`/opportunities/${opportunityId}/featured`, {
       method: "PATCH",
       body: JSON.stringify({ featured }),
+      token,
+    }),
+  setActive: (opportunityId: string, active: boolean, token: string) =>
+    request<Opportunity>(`/opportunities/${opportunityId}/active`, {
+      method: "PATCH",
+      body: JSON.stringify({ active }),
       token,
     }),
 

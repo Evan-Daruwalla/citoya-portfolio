@@ -7,22 +7,33 @@ import { ReportConcern } from "@/components/report-concern";
 import { ApiError, api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { consentGated } from "@/lib/consent";
+import { canReadThread } from "@/lib/thread-access";
 import type { Message } from "@/lib/types";
+import { useAuthedQuery } from "@/lib/use-api";
 
-/** Renders only if the current user can access the thread (org owner or an applicant).
- * Access is decided by the backend: a 403 on the initial fetch hides the section.
+/** Renders only if the current user can access the thread (org owner or an approved
+ * applicant). Fetched only when `canReadThread` says the backend will allow it
+ * (2026-09-26); a 403 on the fetch still hides the section as a backstop.
  *
  * `canPost` is the owning org only (Evan, 2026-09-22): applicants READ the thread, and
  * the same box sends THEIR message privately to the org (`/messages/to-org`) instead of
  * posting it. The backend refuses a student's thread post regardless. */
 export function MessagesSection({
   opportunityId,
+  orgId,
   canPost,
 }: {
   opportunityId: string;
+  orgId: string;
   canPost: boolean;
 }) {
   const { user } = useAuth();
+  // Same key the signup section reads, so this is one shared request, not a second one.
+  const { data: myApps } = useAuthedQuery(
+    user?.role === "student" ? "applications/my" : null,
+    (t) => api.myApplications(t),
+  );
+  const canRead = canPost || canReadThread(user, orgId, opportunityId, myApps);
   const blocked = !canPost && consentGated(user); // F12: the server refuses it anyway
   const [messages, setMessages] = useState<Message[] | null>(null);
   const [visible, setVisible] = useState(false);
@@ -36,7 +47,7 @@ export function MessagesSection({
 
   function load() {
     const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) return;
+    if (!token || !canRead) return;
     api
       .messages(opportunityId, token)
       .then((m) => {
@@ -55,7 +66,7 @@ export function MessagesSection({
       });
   }
 
-  useEffect(load, [opportunityId]);
+  useEffect(load, [opportunityId, canRead]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

@@ -5,19 +5,24 @@ import { useState, type FormEvent } from "react";
 import { WifiOff } from "lucide-react";
 
 import { ApiError, api } from "@/lib/api";
+import { ReportConcern } from "@/components/report-concern";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { consentGated } from "@/lib/consent";
 import { usePublicQuery } from "@/lib/use-api";
 
-export function ReviewsSection({ orgId }: { orgId: string }) {
+export function ReviewsSection({ orgId, opportunityId }: { orgId: string; opportunityId: string }) {
   const { user } = useAuth();
   // Public: reviews render for a signed-out visitor, same as the listing around
   // them. Until this conversion the load was `.catch(() => undefined)` — a
   // failed fetch left `data` null and the card rendered as a bare "Reviews"
   // heading, indistinguishable from an org that has never been reviewed.
+  // The key includes the viewer (as F23 did for the listing): with a token the response
+  // marks the caller's own review. What actually keeps one user's `mine` from reaching
+  // another is the auth context clearing the SWR cache on login and logout; while auth is
+  // still loading, the key reads `:anon` even though the token is sent (same as F23).
   const { data, loading, error, retry, mutate } = usePublicQuery(
-    `orgs/${orgId}/reviews`,
-    () => api.orgReviews(orgId),
+    `orgs/${orgId}/reviews:${user?.id ?? "anon"}`,
+    () => api.orgReviews(orgId, localStorage.getItem(TOKEN_KEY) ?? undefined),
   );
   const [rating, setRating] = useState(5);
   const [text, setText] = useState("");
@@ -25,6 +30,29 @@ export function ReviewsSection({ orgId }: { orgId: string }) {
   // page made: one string serving both let a failed post clear a failed load.
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // The author, or an admin, can take a review down (2026-09-26, feature inventory
+  // #10). The reviewed org cannot; the API refuses it too.
+  async function onDelete(reviewId: string, mine: boolean) {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
+    const prompt = mine
+      ? "Delete your review? This cannot be undone."
+      : "Remove this review as an admin? This cannot be undone.";
+    if (!window.confirm(prompt)) return;
+    setDeleteError(null);
+    setDeletingId(reviewId);
+    try {
+      await api.deleteReview(orgId, reviewId, token);
+      void mutate();
+    } catch (err) {
+      setDeleteError(err instanceof ApiError ? err.message : "Could not delete the review.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -83,8 +111,25 @@ export function ReviewsSection({ orgId }: { orgId: string }) {
               {"☆".repeat(5 - r.rating)} · {r.author_name}
             </p>
             {r.text && <p className="progress-label" style={{ marginTop: 4 }}>{r.text}</p>}
+            <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 6, fontSize: ".72rem" }}>
+              {(r.mine || user?.is_admin) && (
+                <button
+                  className="btn-s"
+                  style={{ padding: "4px 10px", fontSize: ".72rem" }}
+                  disabled={deletingId === r.id}
+                  onClick={() => onDelete(r.id, r.mine)}
+                >{r.mine ? "Delete my review" : "Remove (admin)"}</button>
+              )}
+              {/* Anyone may report a review (2026-09-26, #10 option C): the same mailto to
+                  support that listings and messages use; handled under P5 in
+                  docs/SUPPORT_PROCEDURES.md. Not on your own review: delete it instead. */}
+              {!r.mine && (
+                <ReportConcern subject={`Report a review (${r.id}) on listing ${opportunityId}`} label="Report" />
+              )}
+            </div>
           </div>
         ))}
+        {deleteError && <p className="ferr" style={{ marginBottom: 0 }}>{deleteError}</p>}
 
         {user?.role === "student" && !consentGated(user) && (
           <form

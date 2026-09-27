@@ -191,8 +191,8 @@ export default function OpportunityDetailPage() {
 
           <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 16 }}>
             {user?.role === "org" && user.id === opp.org_id && <OrgCheckinSection opp={opp} />}
-            <MessagesSection opportunityId={opp.id} canPost={user?.role === "org" && user.id === opp.org_id} />
-            <ReviewsSection orgId={opp.org_id} />
+            <MessagesSection opportunityId={opp.id} orgId={opp.org_id} canPost={user?.role === "org" && user.id === opp.org_id} />
+            <ReviewsSection orgId={opp.org_id} opportunityId={opp.id} />
           </div>
         </div>
       )}

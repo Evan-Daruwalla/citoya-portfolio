@@ -79,6 +79,16 @@ Last updated 2026-09-10.
   `npm run build` (or check it out) before committing rather than editing it.~~ **Untracked
   and in `frontend/.gitignore` since 2026-09-24 (audit F14)**, as the Next.js 16 docs advise.
   The committed copy had been the DEV variant since `bde920c`, so every build dirtied the tree.
+- **`next dev` 404s every App Router route on this machine (found 2026-09-25):** `/`,
+  `/login` and even `robots.txt` return 404 while `public/` files serve 200. The Turbopack
+  cache in `frontend/.next/dev` dates from 2026-08-06, before the 2026-09-24 folder rename,
+  and is ~~the likely cause (not proven)~~ the cause (proven 2026-09-26, below). Its dev run also rewrote `.next/dev/types/routes.d.ts`
+  garbled, and `tsconfig.json` includes `.next/dev/types`, so the next `npm run build` failed
+  its type check until those files were moved aside. Workaround used before the fix:
+  `npm run build` + `npm run start`. **Fixed 2026-09-26 00:26 CDT (Evan's OK):** `frontend/.next/dev` was moved
+  aside to `.next/dev.stale-2026-08-06` (gitignored; safe to delete). `next dev` then served
+  every route 200, and a following `npm run build` passed with freshly generated dev types, so
+  the pre-rename cache was the cause. After a folder move, move `.next/dev` aside first.
 - **`next dev` and `npm run build` share the `.next/` dir** (2026-07-12): running the production
   build while a `next dev` server is live overwrites the chunks it serves from memory → the running
   app suddenly renders UNSTYLED with 404s on `/_next/static/.../layout.css` + chunk files. Not a

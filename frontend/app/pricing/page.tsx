@@ -47,6 +47,7 @@ export default function PricingPage() {
               <li>Applicant management &amp; approvals</li>
               <li>One-click &amp; bulk hour verification</li>
               <li>Direct messaging with volunteers</li>
+              <li>Volunteer roster CSV export</li>
               <li>Public organization page with reviews</li>
               <li>Skill endorsements for students</li>
             </ul>
@@ -61,7 +62,6 @@ export default function PricingPage() {
               <li>Everything in Community</li>
               <li className="pc-star">Unlimited active listings</li>
               <li className="pc-star">3 Featured listings, pinned to the top of search</li>
-              <li className="pc-star">Volunteer roster CSV export</li>
               <li className="pc-star">Priority support</li>
             </ul>
             <div>{BILLING_LIVE ? (

@@ -179,6 +179,24 @@ export default function OrgDashboardPage() {
     }
   }
 
+  // M11 item 8 (2026-09-25): account deletion 409s while any listing is active, and until
+  // now nothing in the UI could deactivate one, so an org could not delete its account
+  // in-app. Deactivating only hides a listing from discovery; its applications and logged
+  // hours are untouched (`set_active` in routes/opportunities.py).
+  async function toggleActive(o: Opportunity) {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
+    setBusyId(o.id);
+    try {
+      await api.setActive(o.id, !o.active, token);
+      refresh();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not update the listing.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function sendBroadcast() {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token || !msgOpp || !msgBody.trim()) return;
@@ -349,6 +367,17 @@ export default function OrgDashboardPage() {
                 )}
               </>
             )}
+            {/* On history cards too: an expired listing that is still active blocks
+                account deletion just the same. Reactivating an expired one is pointless,
+                so history shows only Deactivate. */}
+            {(!inHistory || o.active) && (
+              <button
+                className="btn-s"
+                style={{ padding: "6px 12px", fontSize: ".75rem" }}
+                disabled={busyId === o.id}
+                onClick={() => toggleActive(o)}
+              >{o.active ? "Deactivate" : "Reactivate"}</button>
+            )}
           </div>
         </div>
       </div>
@@ -489,7 +518,7 @@ export default function OrgDashboardPage() {
                 </>
               )}
               <div style={{ marginTop: 16, padding: "14px 16px", background: "var(--gold-pale, #fdf7e3)", border: "1px solid var(--gold)", borderRadius: 8, fontSize: ".83rem", color: "var(--dark)" }}>
-                <Star size={14} strokeWidth={1.75} aria-hidden /> <strong>Pro adds:</strong> unlimited listings, featured placement at the top of search, and volunteer roster exports.
+                <Star size={14} strokeWidth={1.75} aria-hidden /> <strong>Pro adds:</strong> unlimited listings and featured placement at the top of search.
               </div>
             </div>
           )}
@@ -653,7 +682,7 @@ export default function OrgDashboardPage() {
                   <p>
                     Your past listings and the hours you verified are kept so your volunteers’ records stay intact.
                     Your account (profile, login, messages you sent, and notifications) is permanently erased.
-                    You must deactivate all active listings first. <strong>This cannot be undone.</strong>
+                    You must deactivate all active listings first (the Deactivate button on each card in My Listings and Listing History). <strong>This cannot be undone.</strong>
                   </p>
                   <div className="fr">
                     <label htmlFor="applicants-delete-confirm">Type DELETE to confirm</label>
