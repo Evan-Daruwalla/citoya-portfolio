@@ -123,6 +123,12 @@ export function MessagesSection({
             <Link href="/inbox" style={{ color: "var(--green)" }}>inbox</Link>.
           </p>
         )}
+        {/* Without this the box was just greyed out, with nothing saying why (2026-09-26). */}
+        {blocked && (
+          <p className="progress-label" style={{ marginTop: 0 }}>
+            You can read messages, but you can&apos;t send one until a parent or guardian approves your account.
+          </p>
+        )}
         <form
           onSubmit={onSubmit}
           style={{ display: "flex", gap: 8, borderTop: "1px solid var(--border)", paddingTop: 14 }}

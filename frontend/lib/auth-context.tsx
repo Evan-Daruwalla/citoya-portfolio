@@ -29,7 +29,7 @@ type RegisterInput = {
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, opts?: { restore?: boolean }) => Promise<void>;
   register: (input: RegisterInput) => Promise<void>;
   refresh: () => Promise<void>;
   logout: () => void;
@@ -99,10 +99,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  async function login(email: string, password: string) {
+  async function login(email: string, password: string, opts?: { restore?: boolean }) {
     // Before the new identity exists, not after — see clearCache.
     clearCache();
-    const { access_token } = await api.login({ email, password });
+    const { access_token } = await api.login({ email, password, restore: opts?.restore });
     localStorage.setItem(TOKEN_KEY, access_token);
     setUser(await api.me(access_token));
   }

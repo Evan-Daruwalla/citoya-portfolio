@@ -43,9 +43,12 @@ export const TOKEN_KEY = "citoya_token";
 
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  /** The backend's raw `detail`, before `humanizeDetail` turns it into a sentence. */
+  detail: unknown;
+  constructor(status: number, message: string, detail?: unknown) {
     super(message);
     this.status = status;
+    this.detail = detail;
   }
 }
 
@@ -78,7 +81,7 @@ async function request<T>(
     } catch {
       // response wasn't JSON — fall back to statusText
     }
-    throw new ApiError(res.status, humanizeDetail(detail));
+    throw new ApiError(res.status, humanizeDetail(detail), detail);
   }
 
   if (res.status === 204) return undefined as T;
@@ -99,7 +102,9 @@ export const api = {
     accepted_terms?: boolean;
   }) => request<User>("/auth/register", { method: "POST", body: JSON.stringify(input) }),
 
-  login: (input: { email: string; password: string }) =>
+  // `restore` answers the "Restore it?" prompt for an account inside its 48-hour
+  // deletion window (2026-09-26); the backend ignores it on any other account.
+  login: (input: { email: string; password: string; restore?: boolean }) =>
     request<Token>("/auth/login", { method: "POST", body: JSON.stringify(input) }),
 
   me: (token: string) => request<User>("/auth/me", { token }),

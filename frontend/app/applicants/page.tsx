@@ -263,7 +263,9 @@ export default function OrgDashboardPage() {
     try {
       await api.deleteMe(delPassword, token);
       logout();
-      router.push("/");
+      // Recoverable for 48 hours (2026-09-26): the login page says so, and a login
+      // there offers the restore.
+      router.push("/login?deleted=1");
     } catch (err) {
       setDeleteError(err instanceof ApiError ? err.message : "Could not delete your account.");
       setDeleting(false);
@@ -680,9 +682,11 @@ export default function OrgDashboardPage() {
                 <div className="delete-zone" style={{ maxWidth: 580 }}>
                   <h4><TriangleAlert size={16} strokeWidth={1.75} aria-hidden /> Delete Account</h4>
                   <p>
-                    Your past listings and the hours you verified are kept so your volunteers’ records stay intact.
-                    Your account (profile, login, messages you sent, and notifications) is permanently erased.
-                    You must deactivate all active listings first (the Deactivate button on each card in My Listings and Listing History). <strong>This cannot be undone.</strong>
+                    Your account is deactivated right away. After 48 hours, your profile, login, messages you sent, and
+                    notifications are permanently erased. Your past listings and the hours you verified are kept so your
+                    volunteers’ records stay intact.
+                    You must deactivate all active listings first (the Deactivate button on each card in My Listings and Listing History).{" "}
+                    <strong>Log in within 48 hours to restore your account.</strong>
                   </p>
                   <div className="fr">
                     <label htmlFor="applicants-delete-confirm">Type DELETE to confirm</label>

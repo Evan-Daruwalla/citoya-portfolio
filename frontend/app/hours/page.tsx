@@ -277,7 +277,12 @@ export default function MyHoursPage() {
                   Submit
                 </Button>
               </div>
-              <Input value={srNote} onChange={(e) => setSrNote(e.target.value)} placeholder="Note (optional)" />
+              <Input
+                value={srNote}
+                onChange={(e) => setSrNote(e.target.value)}
+                placeholder="Note (optional)"
+                aria-label="Note (optional)"
+              />
             </form>
             {formMsg && <p className="text-sm text-muted-foreground">{formMsg}</p>}
           </CardContent>

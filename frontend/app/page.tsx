@@ -103,17 +103,21 @@ export default function Home() {
       {/* MARQUEE */}
       <div className="marquee-band">
         <div className="marquee-track">
-          {[
-            "Education", "Environment", "Animals", "Food & Hunger", "Health",
-            "Arts & Culture", "STEM", "Community", "Agriculture",
-          ]
-            .concat([
-              "Education", "Environment", "Animals", "Food & Hunger", "Health",
-              "Arts & Culture", "STEM", "Community", "Agriculture",
-            ])
-            .map((c, i) => (
-              <span key={i}>{c}</span>
-            ))}
+          {/* Repeats exist only to fill wide screens and loop seamlessly: screen readers get the list once. */}
+          {[0, 1].map((copy) => (
+            <div key={copy} className="marquee-group" aria-hidden={copy === 1 ? true : undefined}>
+              {[0, 1, 2].flatMap((rep) =>
+                [
+                  "Education", "Environment", "Animals", "Food & Hunger", "Health",
+                  "Arts & Culture", "STEM", "Community", "Agriculture",
+                ].map((c) => (
+                  <span key={`${rep}-${c}`} aria-hidden={rep > 0 ? true : undefined}>
+                    {c}
+                  </span>
+                )),
+              )}
+            </div>
+          ))}
         </div>
       </div>
 

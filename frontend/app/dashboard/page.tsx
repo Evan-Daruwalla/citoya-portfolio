@@ -167,7 +167,9 @@ export default function DashboardPage() {
     try {
       await api.deleteMe(delPassword, token);
       logout();
-      router.push("/");
+      // Recoverable for 48 hours (2026-09-26): the login page says so, and a login
+      // there offers the restore.
+      router.push("/login?deleted=1");
     } catch (err) {
       setAcctError(err instanceof ApiError ? err.message : "Could not delete your account.");
       setDeleting(false);
@@ -462,9 +464,11 @@ export default function DashboardPage() {
               <div className="delete-zone">
                 <h4><TriangleAlert size={16} strokeWidth={1.75} aria-hidden /> Delete Account</h4>
                 <p>
+                  Your account is deactivated right away, and your signups are released so others can take the spots.
+                  After 48 hours, your profile, guardian information, saved items, and notifications are permanently erased.
                   Your verified hours are kept for the organizations that recorded them, with your name removed.
-                  Everything else (your profile, guardian information, saved items, and notifications) is permanently erased.
-                  <strong> This cannot be undone.</strong>
+                  <strong> Log in within 48 hours to restore your account</strong> (your signups are not restored).
+                  Until then, this email can&apos;t be used for a new account.
                 </p>
                 <div className="fr">
                   <label htmlFor="dashboard-delete-confirm">Type DELETE to confirm</label>

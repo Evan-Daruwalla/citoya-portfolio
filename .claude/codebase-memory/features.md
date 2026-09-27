@@ -7,8 +7,8 @@ Last updated 2026-09-26.
   2026-07-12 — full stack boots, migrations applied on real Postgres), **M12 v1 visual parity**
   (2026-07-12), and two off-roadmap Evan-directed 2026-07-13 blocks: **v1 EXACT-COPY** (all 13
   screens rebuilt in the scoped `.v1` architecture — see architecture.md/conventions.md) and a
-  **public-portfolio slice**. **589 collected (584 passed + 5 skipped on SQLite; 589 passed on Postgres), migrations 0001–0032 (2026-09-26 ~01:14 CDT, record BV;
-  supersedes 588 of ~00:40 (BU), 582 of 2026-09-25 ~22:06 (BS), 578 of 2026-09-24 ~23:49 (BR), 542 of ~22:43 (BQ), 533 of ~21:09 (BJ), 516 of 2026-09-23 ~22:20 CDT, 513 of 21:08, 512 of ~20:58, 509 of ~20:45, 508 of ~16:20, 507 of ~15:48 the same day and 454/0001–0029 of 2026-09-20, which superseded the 327/0001–0024 figure of 2026-08-19, which superseded 189/0001–0021). M11 launch = BLOCKED-ON-EVAN (host, domain/DNS, prod
+  **public-portfolio slice**. **633 collected (628 passed + 5 skipped on SQLite; 633 passed on Postgres), migrations 0001-0033 (2026-09-26 23:19-23:23 CDT, record CG;
+  supersedes 589 of ~01:14 (BV), 588 of ~00:40 (BU), 582 of 2026-09-25 ~22:06 (BS), 578 of 2026-09-24 ~23:49 (BR), 542 of ~22:43 (BQ), 533 of ~21:09 (BJ), 516 of 2026-09-23 ~22:20 CDT, 513 of 21:08, 512 of ~20:58, 509 of ~20:45, 508 of ~16:20, 507 of ~15:48 the same day and 454/0001–0029 of 2026-09-20, which superseded the 327/0001–0024 figure of 2026-08-19, which superseded 189/0001–0021). M11 launch = BLOCKED-ON-EVAN (host, domain/DNS, prod
   secrets, Resend key, Turnstile key, SUPPORT_EMAIL, legal).**
 - **M13 / M14 (added 2026-09-02).** This section stopped at M9/M10/M12 while INDEX.md
   routed every reader here for milestone status — so a session following INDEX's own
@@ -51,6 +51,10 @@ Last updated 2026-09-26.
   `PATCH /opportunities/{id}/active` (`api.setActive`). Account deletion refuses while any
   listing is active, expired ones included, and until this button nothing in the UI could
   deactivate one, so an org could not delete its account in-app.
+- **Account deletion is recoverable for 48 hours (2026-09-26, record CF):** after DELETE the
+  dashboards go to `/login?deleted=1`, which says so; logging in inside the window shows
+  "This account is scheduled for deletion on <date>. Restore it?" (Restore / Keep deleted;
+  `lib/pending-deletion.ts` reads the 409). Signups released at deletion are not restored.
 - **Review takedown (2026-09-26, feature inventory #10, option B):** the author or an admin can
   delete a review (`DELETE /orgs/{org_id}/reviews/{review_id}`, 204); the reviewed org gets 403.
   The public listing marks the signed-in caller's own review (`mine`, optional token), and the

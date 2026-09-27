@@ -63,11 +63,18 @@
 
 /* MARQUEE */
 .v1 .marquee-band { background: var(--green-pale); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); overflow: hidden; padding: 13px 0; position: relative; }
-.v1 .marquee-track { display: flex; gap: 36px; width: max-content; animation: v1marquee 36s linear infinite; white-space: nowrap; }
-.v1 .marquee-band:hover .marquee-track { animation-play-state: paused; }
+/* Two identical groups, each at least as wide as the band, each sliding by exactly its own width
+   plus the gap, so the loop is seamless on any screen width. The old single track slid by 50% of
+   two copies, which left the right side empty whenever one copy was narrower than the screen
+   (a 21:9 monitor, 2026-09-26). Each group holds the list three times (~4200px), so the word
+   spacing stays as before on screens up to that wide, and 108s keeps the old speed (~39px/s:
+   the old 36s moved one ~1400px copy). */
+.v1 .marquee-track { display: flex; gap: 36px; white-space: nowrap; }
+.v1 .marquee-group { display: flex; flex-shrink: 0; align-items: center; justify-content: space-around; gap: 36px; min-width: 100%; animation: v1marquee 108s linear infinite; }
+.v1 .marquee-band:hover .marquee-group { animation-play-state: paused; }
 .v1 .marquee-track span { font-family: var(--font-display); font-style: italic; font-size: .95rem; color: var(--green); opacity: .85; }
 .v1 .marquee-track span::after { content: '✦'; margin-left: 36px; color: var(--gold); font-style: normal; opacity: .7; }
-@keyframes v1marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes v1marquee { from { transform: translateX(0); } to { transform: translateX(calc(-100% - 36px)); } }
 
 /* STATS BAR */
 .v1 .stats-bar { background: var(--green); padding: 22px 28px; display: flex; justify-content: center; gap: 0; flex-wrap: wrap; }
@@ -445,7 +452,7 @@
 /* Reduced motion: pause the only continuous movement (marquee); press scale is
    already gated above. Color/opacity feedback intentionally stays. */
 @media (prefers-reduced-motion: reduce) {
-  .v1 .marquee-track { animation-play-state: paused; }
+  .v1 .marquee-group { animation-play-state: paused; }
 }
 
 /* Keyboard focus: 2px brand outline + 2px offset (WCAG 2.4.13-quality). Inputs
