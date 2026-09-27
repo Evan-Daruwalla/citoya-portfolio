@@ -1,6 +1,6 @@
 # gotchas — citoya-v2
 
-Last updated 2026-09-10.
+Last updated 2026-09-26.
 
 - **psycopg CANNOT run async on Windows' default ProactorEventLoop — and setting the loop
   policy in `main.py` does NOT fix it under uvicorn** (supersedes this entry's 2026-09-07

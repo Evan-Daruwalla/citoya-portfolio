@@ -1,6 +1,6 @@
 # features — citoya-v2
 
-Last updated 2026-09-03.
+Last updated 2026-09-26.
 
 ## Milestone status (PRD M1–M11)
 - **Done:** M1–M9 (see below), **M10 COMPLETE** (`docker compose up --build` verified by Evan
@@ -15,11 +15,14 @@ Last updated 2026-09-03.
   instruction found no mention of the two most launch-relevant milestones (audit
   2026-09-02). Current: **M13.1–.5 done**; **M13.6 REOPENED** — Evan reversed the
   skip 2026-08-31 and adopted SWR, now **20 units converted / 1 remaining** (2026-09-20, Appendix AA; the "of 22" denominator never
-  reconciled and is retired: recount with `grep -rl "useAuthedQuery\|usePublicQuery" app
-  components --include=*.tsx` from `frontend/`, never quote) (`lib/use-api.ts`,
+  reconciled and is retired). `grep -rl "useAuthedQuery\|usePublicQuery" app components
+  --include=*.tsx` from `frontend/` lists files that USE the hook, not finished conversions:
+  it prints 21 since 2026-09-26 (BV, record BX). Check each file's loads, never the count
+  alone. **M13.6 COMPLETE 2026-09-26 (record BY): 21 units**, the last being
+  `messages-section`'s thread fetch (`lib/use-api.ts`,
   `useAuthedQuery`/`usePublicQuery`; `dashboard` 2026-09-05, `applicants` 2026-09-06,
-  `signup-section` + `hours` + `org-checkin-section` 2026-09-20). **Remaining 1:**
-  `messages-section`; **M14.1 site analytics DONE** (`route_hits`,
+  `signup-section` + `hours` + `org-checkin-section` 2026-09-20). ~~**Remaining 1:**
+  `messages-section`~~ (converted 2026-09-26, BY); **M14.1 site analytics DONE** (`route_hits`,
   migration 0025, admin-only `GET /analytics/traffic`, and the `/admin` "Site
   traffic" section that reads it — 2026-09-02; it had no frontend consumer at all
   until then); **M14.2 org analytics DONE 2026-09-03** — `GET /analytics/org` scoped

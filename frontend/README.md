@@ -88,8 +88,9 @@ lib/
   humanize-detail.ts  # turns FastAPI's `detail` (string or {code,message}) into user-readable text
   v1-routes.ts        # V1_ROUTES + isV1Route() — which routes render v1's own chrome
   use-api.ts          # useAuthedQuery/usePublicQuery — the SWR data-fetching chokepoint
-                      #   (M13.6: 20 units converted, 1 remaining, 2026-09-20 — recount with
-                      #   grep -rl "useAuthedQuery\|usePublicQuery"). Returns {data,error,loading,retry}:
+                      #   (M13.6 complete 2026-09-26: 21 units.
+                      #   grep -rl "useAuthedQuery\|usePublicQuery" lists files that USE the hook,
+                      #   not finished conversions; check each file's loads.) Returns {data,error,loading,retry}:
                       #   read `error`, or a failed load renders as an EMPTY state
   status.ts           # HOURS_/APPLICATION_ status label+pill maps (consolidated 2026-08-31
                       #   from 4 copies across 2 status domains)

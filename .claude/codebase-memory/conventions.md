@@ -1,6 +1,6 @@
 # conventions — citoya-v2
 
-Last updated 2026-09-03 (supersedes the 2026-07-13 version, which predated the role-guard, data-fetch and status-map conventions below).
+Last updated 2026-09-26 (supersedes the 2026-07-13 version, which predated the role-guard, data-fetch and status-map conventions below).
 
 ## Visual / UI standards → `ui.md` (canonical)
 Editorial language, the two coexisting visual systems (`.v1` scoped vs shadcn —
@@ -78,7 +78,8 @@ the `#fragment`, read with `useSyncExternalStore`). Dynamic route params use `us
   Sharing one `error` string means the write's `setError(null)` erases a load failure that is
   still true — the user keeps looking at a control that cannot work, with nothing saying why.
   SWR owns the load error; the submit keeps its own `submitError`. `reviews-section`, the
-  `opportunities/[id]` page and `signup-section` all make this split.
+  `opportunities/[id]` page, `signup-section` and `messages-section` (2026-09-26) all make
+  this split.
 - **Data outranks error in the branch order**: `loading -> data -> error -> empty`. SWR keeps the
   last good value when a background revalidation fails, so putting `error` above `data` throws
   away a working control because a refresh blipped. `loading` is only true when there is no data

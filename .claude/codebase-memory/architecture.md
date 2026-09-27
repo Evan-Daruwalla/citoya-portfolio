@@ -1,6 +1,6 @@
 # architecture — citoya-v2
 
-Last updated 2026-09-07.
+Last updated 2026-09-24.
 
 ## Stack
 **Dependencies + pinned versions → `dependencies.md`** (canonical). In brief:
