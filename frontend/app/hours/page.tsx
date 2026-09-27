@@ -1,7 +1,8 @@
 "use client";
 
 import { TriangleAlert } from "lucide-react";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,24 +11,37 @@ import { Label } from "@/components/ui/label";
 import { ApiError, api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { CONSENT_GATED_COPY, consentGated } from "@/lib/consent";
+import { localDateKey } from "@/lib/event-time";
+import { splitGoals } from "@/lib/goals";
+import { hoursDateKey, hoursTitle } from "@/lib/hours";
 import { HOURS_STATUS_LABEL, HOURS_STATUS_PILL } from "@/lib/status";
 import { useAuthedQuery } from "@/lib/use-api";
+import { useOffsiteHours } from "@/lib/use-offsite-hours";
 
-const SOURCE_LABEL: Record<string, string> = { auto: "Auto-logged", self: "Self-reported", checkin: "Check-in" };
+const SOURCE_LABEL: Record<string, string> = { auto: "Auto-logged", self: "Self-reported", checkin: "Check-in", offsite: "Outside Citoya" };
 
 export default function MyHoursPage() {
   const { user, loading } = useAuth();
   const isStudent = user?.role === "student";
   const gated = consentGated(user); // K3: never send a write the gate refuses
-  // Keys are shared with `/dashboard` (and `hours/mine` + `awards/my` with
-  // `/portfolio`) — the same data behind one cache entry is the point of the key.
-  const hoursQ = useAuthedQuery(isStudent ? "hours/mine" : null, (t) => api.listHours(t));
-  const awardsQ = useAuthedQuery(isStudent ? "awards/my" : null, (t) => api.myAwards(t));
+  // Keys are shared with `/dashboard` (and `hours/mine` with `/portfolio`) — the
+  // same data behind one cache entry is the point of the key.
+  const hoursQ = useAuthedQuery(isStudent ? "hours/mine" : null, (t) => api.listAllHours(t));
+  const goalsQ = useAuthedQuery(isStudent ? "goals" : null, (t) => api.listGoals(t));
   const appsQ = useAuthedQuery(isStudent ? "applications/my" : null, (t) => api.myApplications(t));
 
-  const entries = hoursQ.data ?? [];
-  const awards = awardsQ.data ?? null;
+  // Memoized only to keep the goal useMemo below off a fresh [] each render.
+  const entries = useMemo(() => hoursQ.data ?? [], [hoursQ.data]);
   const apps = appsQ.data ?? [];
+  const goalRows = useMemo(
+    () =>
+      splitGoals(
+        goalsQ.data?.goals ?? [],
+        entries.map((h) => ({ date: hoursDateKey(h), hours: h.hours, status: h.status })),
+        localDateKey(new Date()),
+      ),
+    [entries, goalsQ.data],
+  );
 
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -48,7 +62,7 @@ export default function MyHoursPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const { mutate: mutateHours } = hoursQ;
-  const { mutate: mutateAwards } = awardsQ;
+  const offsite = useOffsiteHours(() => void mutateHours());
 
   // Auto-log is a WRITE and cannot live inside a cached read: SWR revalidates on
   // focus and on reconnect, and each of those would re-POST. Before this
@@ -71,18 +85,16 @@ export default function MyHoursPage() {
     api
       .autoLogHours(token)
       .then((r) => {
-        if (r.created > 0) {
-          void mutateHours();
-          void mutateAwards();
-        }
+        // Goal progress is computed from hours, so re-reading hours is enough.
+        if (r.created > 0) void mutateHours();
       })
       .catch(() => undefined);
-  }, [loading, isStudent, gated, mutateHours, mutateAwards]);
+  }, [loading, isStudent, gated, mutateHours]);
 
   /** The Retry button. Re-reads only — it must never POST. */
   function retryAll() {
     hoursQ.retry();
-    awardsQ.retry();
+    goalsQ.retry();
     appsQ.retry();
   }
 
@@ -93,8 +105,7 @@ export default function MyHoursPage() {
     setFormError(null);
     try {
       await api.appealHours(id, "Requesting another review.", token);
-      // An appeal moves one row denied -> appealed. Verified totals do not move,
-      // so `awards/my` is deliberately not revalidated.
+      // An appeal moves one row denied -> appealed; goals read hours, so this is all.
       void mutateHours();
     } catch (err) {
       // Was `try`/`finally` with NO catch: a failed appeal showed the user
@@ -116,8 +127,7 @@ export default function MyHoursPage() {
       await api.selfReportHours({ opportunity_id: srOpp, hours: srHours, note: srNote || undefined }, token);
       setSrNote("");
       setFormMsg("Hours submitted for verification.");
-      // Self-reported hours land as PENDING, and awards count VERIFIED hours, so
-      // this affects `hours/mine` and nothing else.
+      // Self-reported hours land as PENDING; goal progress re-derives from hours.
       void mutateHours();
     } catch (err) {
       setFormError(err instanceof ApiError ? err.message : "Something went wrong.");
@@ -137,10 +147,9 @@ export default function MyHoursPage() {
       await api.redeemCheckin(ciOpp, ciCode.trim().toUpperCase(), token);
       setCiCode("");
       setFormMsg("Checked in. Hours verified!");
-      // A redeemed code mints INSTANTLY-VERIFIED hours, so unlike a self-report
-      // this one really can move an award threshold.
+      // A redeemed code mints INSTANTLY-VERIFIED hours; goal progress re-derives
+      // from hours, so re-reading hours is enough.
       void mutateHours();
-      void mutateAwards();
     } catch (err) {
       setFormError(err instanceof ApiError ? err.message : "Something went wrong.");
     } finally {
@@ -166,31 +175,34 @@ export default function MyHoursPage() {
         <h1 className="section-title">My Hours</h1>
       </div>
 
-      {awards && (
+      {/* Goals replace awards here (M16.3, 2026-09-27): the goals still in progress, with
+          this period's progress. They are managed on the dashboard's Goals tab. */}
+      {goalsQ.data && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Awards: {awards.verified_hours} verified hours</CardTitle>
+            <CardTitle className="text-lg">Goals</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-1 text-sm">
-            {awards.earned.length > 0 ? (
-              awards.earned.map((a) => (
-                <p key={a.id} className="text-primary">
-                  ✓ {a.name}
+            {goalRows.active.length > 0 ? (
+              goalRows.active.slice(0, 3).map(({ goal, progress }) => (
+                <p key={goal.id}>
+                  {goal.title}: {Number(progress.done.toFixed(1))} of {goal.target_hours} hours
                 </p>
               ))
             ) : (
-              <p className="text-muted-foreground">No awards earned yet.</p>
+              <p className="text-muted-foreground">No goals in progress.</p>
             )}
-            {awards.next && (
-              <p className="text-muted-foreground">
-                Next: {awards.next.name} at {awards.next.hours}h ({awards.next.hours - awards.verified_hours}h to go)
-              </p>
+            {goalRows.completed.length > 0 && (
+              <p className="text-primary">{goalRows.completed.length} completed</p>
             )}
+            <p className="text-muted-foreground">
+              Add, remove or reorder goals on your <Link href="/dashboard">dashboard</Link>, under Goals.
+            </p>
             {/* SWR keeps the last good value when a revalidation fails, so without
-                this line the card would keep showing a number that may have moved,
-                looking exactly as if it were current. */}
-            {awardsQ.error && (
-              <p className="progress-label">Couldn&apos;t refresh — showing the last figures we loaded.</p>
+                this line the card would keep showing figures that may have moved,
+                looking exactly as if they were current. */}
+            {goalsQ.error && (
+              <p className="progress-label">Couldn&apos;t refresh — showing the last goals we loaded.</p>
             )}
           </CardContent>
         </Card>
@@ -289,6 +301,78 @@ export default function MyHoursPage() {
         </Card>
       )}
 
+      {/* Off-site hours (2026-09-27): no listing, so this card does not wait on
+          `applications/my` the way the check-in card above does. */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Volunteering outside Citoya</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={offsite.submit} className="flex flex-col gap-3">
+            <p className="text-sm text-muted-foreground">
+              Log service you did somewhere else. It is marked self-reported and never counts as verified, because no
+              organization on Citoya can confirm it.
+            </p>
+            {gated && <p className="text-sm text-muted-foreground">{CONSENT_GATED_COPY}</p>}
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="offsite-activity">What you did, and where</Label>
+              <Input
+                id="offsite-activity"
+                value={offsite.fields.activity}
+                onChange={(e) => offsite.fields.setActivity(e.target.value)}
+                maxLength={200}
+                placeholder="Food bank sorting at St. Mark's"
+              />
+            </div>
+            <div className="flex gap-2">
+              <div className="flex flex-1 flex-col gap-1">
+                <Label htmlFor="offsite-date">Date</Label>
+                <Input
+                  id="offsite-date"
+                  type="date"
+                  max={offsite.today}
+                  value={offsite.fields.date}
+                  onChange={(e) => offsite.fields.setDate(e.target.value)}
+                />
+              </div>
+              <div className="flex w-24 flex-col gap-1">
+                <Label htmlFor="offsite-hours">Hours</Label>
+                <Input
+                  id="offsite-hours"
+                  type="number"
+                  min={0.5}
+                  max={24}
+                  step={0.5}
+                  value={offsite.fields.hours}
+                  onChange={(e) => offsite.fields.setHours(Number(e.target.value))}
+                />
+              </div>
+            </div>
+            <Input
+              value={offsite.fields.supervisor}
+              onChange={(e) => offsite.fields.setSupervisor(e.target.value)}
+              maxLength={200}
+              placeholder="Supervisor (optional)"
+              aria-label="Supervisor (optional)"
+            />
+            <Input
+              value={offsite.fields.note}
+              onChange={(e) => offsite.fields.setNote(e.target.value)}
+              maxLength={500}
+              placeholder="Note (optional)"
+              aria-label="Note for off-site hours (optional)"
+            />
+            <div>
+              <Button type="submit" size="sm" disabled={gated || offsite.submitting || !offsite.fields.activity.trim()}>
+                Log off-site hours
+              </Button>
+            </div>
+            {offsite.message && <p className="text-sm text-muted-foreground">{offsite.message}</p>}
+            {offsite.error && <p className="ferr" style={{ marginBottom: 0 }}>{offsite.error}</p>}
+          </form>
+        </CardContent>
+      </Card>
+
       {/* ONE render site for write failures. It sits outside the forms card
           because Appeal lives in the entry list below and can fail while the
           card is not rendered at all. */}
@@ -336,7 +420,7 @@ export default function MyHoursPage() {
           <div key={entry.id} className="opp-card">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h3 className="opp-title">{entry.opportunity.title}</h3>
+                <h3 className="opp-title">{hoursTitle(entry)}</h3>
                 <p className="opp-org">
                   {entry.hours}h · {SOURCE_LABEL[entry.source] ?? entry.source}
                 </p>
@@ -351,6 +435,17 @@ export default function MyHoursPage() {
                 {entry.status === "denied" && !entry.appealed && (
                   <Button size="sm" variant="outline" disabled={busyId === entry.id} onClick={() => appeal(entry.id)}>
                     Appeal
+                  </Button>
+                )}
+                {entry.source === "offsite" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={offsite.busyId === entry.id}
+                    onClick={() => offsite.remove(entry.id)}
+                    aria-label={`Delete ${hoursTitle(entry)}`}
+                  >
+                    Delete
                   </Button>
                 )}
               </div>

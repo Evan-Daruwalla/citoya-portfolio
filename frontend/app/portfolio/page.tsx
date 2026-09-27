@@ -19,7 +19,7 @@ export default function PortfolioPage() {
     data: hoursData,
     error: hoursError,
     retry: retryHours,
-  } = useAuthedQuery(isStudent ? "hours/mine" : null, (t) => api.listHours(t));
+  } = useAuthedQuery(isStudent ? "hours/mine" : null, (t) => api.listAllHours(t));
   const { data: awards, error: awardsError } = useAuthedQuery(
     isStudent ? "awards/my" : null,
     (t) => api.myAwards(t),
@@ -70,7 +70,12 @@ export default function PortfolioPage() {
 
   const verified = hours.filter((h) => h.status === "verified");
   const byOrg = new Map<string, number>();
-  for (const h of verified) byOrg.set(h.opportunity.org_name, (byOrg.get(h.opportunity.org_name) ?? 0) + h.hours);
+  // Verified rows always have a listing; the guard is for the type (off-site rows are
+  // never verified, 2026-09-27).
+  for (const h of verified) {
+    const org = h.opportunity?.org_name;
+    if (org) byOrg.set(org, (byOrg.get(org) ?? 0) + h.hours);
+  }
   const orgRows = [...byOrg.entries()].sort((a, b) => b[1] - a[1]);
   const totalHours = awards?.verified_hours ?? verified.reduce((s, h) => s + h.hours, 0);
   const earned = awards?.earned ?? [];

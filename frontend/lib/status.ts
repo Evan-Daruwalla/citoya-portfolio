@@ -5,7 +5,8 @@
 // the word "status" — don't merge them:
 //
 //   * Application status: pending / approved / rejected / waitlisted / withdrawn
-//   * Hours status:       pending / verified / denied / appealed
+//   * Hours status:       pending / verified / denied / appealed / unverified
+//                         (unverified = off-site only, 2026-09-27)
 //
 // Adding a status? Update every map in its domain — they sit adjacent so the
 // sweep is visible. Pill classes (`sp-*`) are defined per CSS system in
@@ -64,6 +65,9 @@ export const HOURS_STATUS_LABEL: Record<string, string> = {
   verified: "Verified",
   denied: "Denied",
   appealed: "Appeal under review",
+  // Off-site entries (2026-09-27): the label says it every time, because nothing
+  // else on the page distinguishes them from hours an organization confirmed.
+  unverified: "Self-reported, unverified",
 };
 
 // Used by: app/dashboard/page.tsx (dense history table — compact register)
@@ -72,15 +76,17 @@ export const HOURS_STATUS_LABEL_COMPACT: Record<string, string> = {
   verified: "Verified",
   denied: "Denied",
   appealed: "Appealed",
+  unverified: "Self-reported",
 };
 
 // Used by: app/hours/page.tsx, app/dashboard/page.tsx.
 // `appealed` → sp-waitlisted because globals.css defines no sp-appealed and
 // v1.css styles sp-appealed and sp-waitlisted with the same rule — one key that
-// renders correctly in both CSS systems.
+// renders correctly in both CSS systems. `unverified` → sp-self, defined in both.
 export const HOURS_STATUS_PILL: Record<string, string> = {
   pending: "sp-pending",
   verified: "sp-verified",
   denied: "sp-denied",
   appealed: "sp-waitlisted",
+  unverified: "sp-self",
 };

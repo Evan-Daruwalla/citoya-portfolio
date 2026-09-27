@@ -1,6 +1,6 @@
 # conventions — citoya-v2
 
-Last updated 2026-09-26 (supersedes the 2026-07-13 version, which predated the role-guard, data-fetch and status-map conventions below).
+Last updated 2026-09-27 (supersedes the 2026-07-13 version, which predated the role-guard, data-fetch and status-map conventions below).
 
 ## Visual / UI standards → `ui.md` (canonical)
 Editorial language, the two coexisting visual systems (`.v1` scoped vs shadcn —
@@ -119,7 +119,9 @@ component.
   1. the reads become one `useAuthedQuery` per key, nothing special;
   2. the write runs in its OWN mount-once `useEffect` behind a `useRef` guard;
   3. on success it revalidates **only the keys that write can affect** (auto-log →
-     `hours/mine` + `awards/my`, never `applications/my` or `saved`), and **only when
+     `hours/mine` + `awards/my`, never `applications/my` or `saved`; since M16.3,
+     2026-09-27, the dashboard and /hours revalidate `hours/mine` only, because goals
+     re-derive from hours and `awards/my` is read only by /portfolio), and **only when
      the server says it changed something** (`created > 0`).
 - Step 3's condition is why the new page is cheaper, not just safer: `{"created": 0}` is
   the common answer, and there the four queries already hold the truth. The old code

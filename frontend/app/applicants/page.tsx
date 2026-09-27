@@ -14,6 +14,7 @@ import { useAuthedQuery } from "@/lib/use-api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { toCsv } from "@/lib/csv";
 import { eventDateKey, fmtDateKey, fmtEventDate, localDateKey } from "@/lib/event-time";
+import { hoursTitle } from "@/lib/hours";
 import type { Opportunity } from "@/lib/types";
 
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -228,7 +229,7 @@ export default function OrgDashboardPage() {
   function exportRoster() {
     const rows = [["Student", "Email", "Opportunity", "Date", "Hours", "Status"]];
     for (const h of hours)
-      rows.push([h.student_name ?? "", h.student_email ?? "", h.opportunity.title, h.occurrence_date ?? "", String(h.hours), h.status]);
+      rows.push([h.student_name ?? "", h.student_email ?? "", hoursTitle(h), h.occurrence_date ?? "", String(h.hours), h.status]);
     const csv = toCsv(rows);
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
     const a = document.createElement("a");
@@ -620,7 +621,7 @@ export default function OrgDashboardPage() {
                         <td>
                           <StudentCell name={h.student_name} email={h.student_email} inactive={h.student_inactive} />
                         </td>
-                        <td style={{ fontSize: ".83rem" }}><strong>{h.opportunity.title}</strong></td>
+                        <td style={{ fontSize: ".83rem" }}><strong>{hoursTitle(h)}</strong></td>
                         <td style={{ fontSize: ".78rem" }}>{h.occurrence_date ? fmtDateKey(h.occurrence_date) : "—"}</td>
                         <td><strong>{h.hours}</strong></td>
                         <td><span className={`status-pill sp-${h.status}`}>{h.status}</span></td>

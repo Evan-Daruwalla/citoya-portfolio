@@ -1,55 +1,60 @@
 "use client";
 
-import { Bookmark, CalendarDays, ChartColumn, ClipboardList, Clock, Download, Lock, MapPin, Plus, Settings, TriangleAlert, Trophy, User, type LucideIcon } from "lucide-react";
+import { Bookmark, CalendarDays, ChartColumn, ClipboardList, Clock, Download, Lock, MapPin, Plus, Settings, Target, TriangleAlert, User, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { ConsentBanner } from "@/components/consent-banner";
+import { CalendarFeed } from "@/components/calendar-feed";
+import { CalendarPanel } from "@/components/calendar-panel";
+import { GoalsPanel } from "@/components/goals-panel";
 import { V1Shell } from "@/components/v1/v1-shell";
 import { ApiError, api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { consentGated } from "@/lib/consent";
-import { eventDateKey, localDateKey } from "@/lib/event-time";
+import { localDateKey } from "@/lib/event-time";
+import { splitGoals } from "@/lib/goals";
+import { hoursDateKey, hoursTitle, hoursTotals } from "@/lib/hours";
 import { HOURS_STATUS_LABEL_COMPACT, HOURS_STATUS_PILL } from "@/lib/status";
 import { useAuthedQuery } from "@/lib/use-api";
+import { useOffsiteHours } from "@/lib/use-offsite-hours";
 
-type Tab = "calendar" | "history" | "log" | "saved" | "awards" | "impact" | "profile" | "account";
+type Tab = "calendar" | "history" | "log" | "saved" | "goals" | "impact" | "profile" | "account";
 const TABS: { id: Tab; label: string; Icon: LucideIcon }[] = [
   { id: "calendar", label: "Calendar", Icon: CalendarDays },
   { id: "history", label: "Hours History", Icon: ClipboardList },
   { id: "log", label: "Log Hours", Icon: Plus },
   { id: "saved", label: "Saved", Icon: Bookmark },
-  { id: "awards", label: "Awards", Icon: Trophy },
+  { id: "goals", label: "Goals", Icon: Target },
   { id: "impact", label: "Impact", Icon: ChartColumn },
   { id: "profile", label: "Profile", Icon: User },
   { id: "account", label: "Account", Icon: Settings },
 ];
-const SRC: Record<string, string> = { auto: "Auto", self: "Self-report", checkin: "Check-in" };
-const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const SRC: Record<string, string> = { auto: "Auto", self: "Self-report", checkin: "Check-in", offsite: "Off-site" };
 
 export default function DashboardPage() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("calendar");
   // Keys are shared with the pages that already read the same data (`hours/mine`
-  // and `awards/my` with /portfolio, `applications/my` with /applications,
+  // with /portfolio and /hours, `goals` with /hours, `applications/my` with /applications,
   // `saved` with /saved) — that shared cache entry is the point of the key.
   const isStudent = user?.role === "student";
   const gated = consentGated(user); // K3: never send a write the gate refuses (auto-log 403'd)
-  const hoursQ = useAuthedQuery(isStudent ? "hours/mine" : null, (t) => api.listHours(t));
-  const awardsQ = useAuthedQuery(isStudent ? "awards/my" : null, (t) => api.myAwards(t));
+  const hoursQ = useAuthedQuery(isStudent ? "hours/mine" : null, (t) => api.listAllHours(t));
+  // Goals replace awards here (M16.3, 2026-09-27); /portfolio still reads awards/my (T4).
+  const goalsQ = useAuthedQuery(isStudent ? "goals" : null, (t) => api.listGoals(t));
   const appsQ = useAuthedQuery(isStudent ? "applications/my" : null, (t) => api.myApplications(t));
   const savedQ = useAuthedQuery(isStudent ? "saved" : null, (t) => api.listSaved(t));
   // Memoized only to keep the `stats` useMemo below off a fresh [] each render.
   const hours = useMemo(() => hoursQ.data ?? [], [hoursQ.data]);
-  const awards = awardsQ.data ?? null;
   const apps = appsQ.data ?? [];
   const saved = savedQ.data ?? [];
   // One combined pair, unchanged from the pre-SWR shape: every tab body still
   // shows a skeleton while anything loads and one inline error if anything fails.
-  const dataLoading = hoursQ.loading || awardsQ.loading || appsQ.loading || savedQ.loading;
-  const dataError = Boolean(hoursQ.error || awardsQ.error || appsQ.error || savedQ.error);
+  const dataLoading = hoursQ.loading || goalsQ.loading || appsQ.loading || savedQ.loading;
+  const dataError = Boolean(hoursQ.error || goalsQ.error || appsQ.error || savedQ.error);
   // log-hours form
   const [srOpp, setSrOpp] = useState("");
   const [srHours, setSrHours] = useState(1);
@@ -68,7 +73,7 @@ export default function DashboardPage() {
 
   function refresh() {
     hoursQ.retry();
-    awardsQ.retry();
+    goalsQ.retry();
     appsQ.retry();
     savedQ.retry();
   }
@@ -81,7 +86,7 @@ export default function DashboardPage() {
   // already has a row, so a repeat is a no-op, not a duplicate.)
   const autoLogged = useRef(false);
   const { mutate: mutateHours } = hoursQ;
-  const { mutate: mutateAwards } = awardsQ;
+  const offsite = useOffsiteHours(() => void mutateHours());
   useEffect(() => {
     if (loading || !isStudent || gated || autoLogged.current) return;
     const token = localStorage.getItem(TOKEN_KEY);
@@ -89,23 +94,19 @@ export default function DashboardPage() {
     autoLogged.current = true;
     api.autoLogHours(token)
       .then((r) => {
-        if (r.created > 0) {
-          void mutateHours();
-          void mutateAwards();
-        }
+        // Goal progress is computed from hours, so re-reading hours is enough.
+        if (r.created > 0) void mutateHours();
       })
       .catch(() => undefined);
-  }, [loading, isStudent, gated, mutateHours, mutateAwards]);
+  }, [loading, isStudent, gated, mutateHours]);
 
-  const stats = useMemo(() => {
-    let verified = 0, pending = 0, total = 0;
-    for (const h of hours) {
-      total += h.hours;
-      if (h.status === "verified") verified += h.hours;
-      else if (h.status === "pending" || h.status === "appealed") pending += h.hours;
-    }
-    return { verified, pending, total };
-  }, [hours]);
+  // Off-site hours get their own number and stay out of the other three (2026-09-27).
+  const stats = useMemo(() => hoursTotals(hours), [hours]);
+  // Goal progress for the current period of each goal (lib/goals.ts).
+  const goalRows = useMemo(() => {
+    const entries = hours.map((h) => ({ date: hoursDateKey(h), hours: h.hours, status: h.status }));
+    return splitGoals(goalsQ.data?.goals ?? [], entries, localDateKey(new Date()));
+  }, [hours, goalsQ.data]);
 
   const oppOptions = apps.map((a) => ({ id: a.opportunity.id, title: a.opportunity.title }));
 
@@ -187,18 +188,6 @@ export default function DashboardPage() {
 
   const initial = (user.full_name || user.email || "?").trim().charAt(0).toUpperCase();
 
-  // calendar month grid (current month) with event dates from applications
-  const eventDays = new Set(apps.map((a) => eventDateKey(a.opportunity.start_time, a.opportunity.timezone)));
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const gridStart = new Date(monthStart);
-  gridStart.setDate(1 - monthStart.getDay());
-  const days = Array.from({ length: 42 }, (_, i) => {
-    const d = new Date(gridStart);
-    d.setDate(gridStart.getDate() + i);
-    return d;
-  });
-
   // Per-section resilience (M13.5): the four queries are separate since the SWR
   // conversion, but `dataLoading`/`dataError` still combine them, so a single
   // skeleton-while-loading + inline error+Retry covers every data tab. Splitting
@@ -254,8 +243,12 @@ export default function DashboardPage() {
               <span className="ds-stat-val big">{dataError ? "—" : stats.verified}</span>
             </div>
             <div className="ds-stat">
-              <span className="ds-stat-label">Unverified Hours</span>
+              <span className="ds-stat-label">Pending Hours</span>
               <span className="ds-stat-val">{dataError ? "—" : stats.pending}</span>
+            </div>
+            <div className="ds-stat">
+              <span className="ds-stat-label">Off-site (self-reported)</span>
+              <span className="ds-stat-val">{dataError ? "—" : stats.offsite}</span>
             </div>
             <div className="ds-stat">
               <span className="ds-stat-label">Total Logged</span>
@@ -282,40 +275,22 @@ export default function DashboardPage() {
           {tab === "calendar" && (
             <div>
               <h1 className="dash-h">Calendar</h1>
-              {dataError ? sectionError : dataLoading ? skelPanel : (
-              <>
-              <div className="cal-wrap">
-                <div className="cal-hdr">
-                  <span className="cal-title">{now.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</span>
-                </div>
-                <div className="cal-grid">
-                  {DOW.map((d) => (
-                    <div key={d} className="cal-day-head">{d}</div>
-                  ))}
-                  {days.map((d, i) => {
-                    const otherMonth = d.getMonth() !== now.getMonth();
-                    const isToday = d.toDateString() === now.toDateString();
-                    const evs = apps.filter((a) => eventDateKey(a.opportunity.start_time, a.opportunity.timezone) === localDateKey(d));
-                    return (
-                      <div key={i} className={`cal-day${otherMonth ? " other-month" : ""}${isToday ? " today" : ""}`}>
-                        <div className="cal-date">{d.getDate()}</div>
-                        {evs.map((a) => (
-                          <div key={a.id} className="cal-event" title={a.opportunity.title}>{a.opportunity.title}</div>
-                        ))}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              {eventDays.size === 0 && <p className="progress-label" style={{ marginTop: 12 }}>No signups this month: <Link href="/discover">find an opportunity</Link>.</p>}
-              </>
-              )}
+              {/* M16.4: its own query per month (approved signups + own events). */}
+              <CalendarPanel />
+              {/* M16.5: the same schedule as a private feed for Apple / Google Calendar. */}
+              <CalendarFeed />
             </div>
           )}
 
           {tab === "history" && (
             <div>
-              <h1 className="dash-h">Hours History</h1>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <h1 className="dash-h">Hours History</h1>
+                {/* M16.2: a print layout the browser saves as a PDF (no PDF library). */}
+                <Link className="btn-s" href="/hours/report?print=1" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: ".8rem" }}>
+                  <Download size={14} strokeWidth={1.75} aria-hidden /> Download PDF
+                </Link>
+              </div>
               {dataError ? sectionError : dataLoading ? skelPanel : hours.length === 0 ? (
                 <div className="empty"><div className="empty-icon"><ClipboardList size={40} strokeWidth={1.75} aria-hidden /></div>No hours logged yet. They log automatically once an event passes.</div>
               ) : (
@@ -326,7 +301,7 @@ export default function DashboardPage() {
                   <tbody>
                     {hours.map((h) => (
                       <tr key={h.id}>
-                        <td>{h.opportunity.title}</td>
+                        <td>{hoursTitle(h)}</td>
                         <td>{h.hours}</td>
                         <td>{SRC[h.source] ?? h.source}</td>
                         <td><span className={`status-pill ${HOURS_STATUS_PILL[h.status] ?? "sp-pending"}`}>{HOURS_STATUS_LABEL_COMPACT[h.status] ?? h.status}</span></td>
@@ -341,8 +316,10 @@ export default function DashboardPage() {
           {tab === "log" && (
             <div>
               <h1 className="dash-h">Log Hours</h1>
-              {dataError ? sectionError : dataLoading ? skelPanel : oppOptions.length === 0 ? (
-                <div className="empty"><div className="empty-icon"><Plus size={40} strokeWidth={1.75} aria-hidden /></div>Apply to an opportunity first, then log or check in here.</div>
+              {dataError ? sectionError : dataLoading ? skelPanel : (
+                <>
+                {oppOptions.length === 0 ? (
+                <div className="empty"><div className="empty-icon"><Plus size={40} strokeWidth={1.75} aria-hidden /></div>Apply to an opportunity to check in or self-report its hours here. Volunteered somewhere else? Log it below.</div>
               ) : (
                 <>
                   <div className="form-box">
@@ -374,6 +351,26 @@ export default function DashboardPage() {
                   {msg && <p className="progress-label">{msg}</p>}
                 </>
               )}
+                  {/* Off-site hours (2026-09-27): shown whether or not the student has
+                      signups, because it needs no listing. */}
+                  <div className="form-box">
+                    <form onSubmit={offsite.submit}>
+                      <div className="fr"><label htmlFor="dashboard-offsite-activity">Volunteering outside Citoya</label></div>
+                      <p className="progress-label" style={{ marginTop: 0, marginBottom: 12 }}>Marked self-reported. It never counts as verified, because no organization on Citoya can confirm it.</p>
+                      <div className="fr"><input id="dashboard-offsite-activity" className="fsel" style={{ width: "100%" }} maxLength={200} value={offsite.fields.activity} onChange={(e) => offsite.fields.setActivity(e.target.value)} placeholder="What you did, and where" /></div>
+                      <div className="checkin-bar">
+                        <input className="fsel" aria-label="Date" type="date" max={offsite.today} value={offsite.fields.date} onChange={(e) => offsite.fields.setDate(e.target.value)} />
+                        <input className="fsel" aria-label="Hours" style={{ width: 80 }} type="number" min={0.5} max={24} step={0.5} value={offsite.fields.hours} onChange={(e) => offsite.fields.setHours(Number(e.target.value))} />
+                        <input className="fsel" aria-label="Supervisor (optional)" style={{ flex: 1, minWidth: 140 }} maxLength={200} value={offsite.fields.supervisor} onChange={(e) => offsite.fields.setSupervisor(e.target.value)} placeholder="Supervisor (optional)" />
+                        <button className="btn-p" type="submit" style={{ padding: "9px 18px", fontSize: ".82rem" }} disabled={gated || offsite.submitting || !offsite.fields.activity.trim()}>Log</button>
+                      </div>
+                      <input className="fsel" aria-label="Note for off-site hours (optional)" style={{ width: "100%" }} maxLength={500} value={offsite.fields.note} onChange={(e) => offsite.fields.setNote(e.target.value)} placeholder="Note (optional)" />
+                    </form>
+                  </div>
+                  {offsite.message && <p className="progress-label">{offsite.message}</p>}
+                  {offsite.error && <p className="ferr">{offsite.error}</p>}
+                </>
+              )}
             </div>
           )}
 
@@ -396,35 +393,11 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {tab === "awards" && (
+          {tab === "goals" && (
             <div>
-              <h1 className="dash-h">Awards: {awards?.verified_hours ?? 0} verified hours</h1>
-              {dataError ? sectionError : dataLoading ? skelPanel : (
-              <>
-              {(awards?.earned ?? []).map((a) => (
-                <div key={a.id} className="award-card">
-                  <div className="award-icon award-achieved"><Trophy size={24} strokeWidth={1.75} aria-hidden /></div>
-                  <div className="award-info">
-                    <div className="award-name">{a.name}</div>
-                    <div className="award-desc">Achieved</div>
-                    <div className="progress-bar"><div className="progress-fill done" style={{ width: "100%" }} /></div>
-                  </div>
-                </div>
-              ))}
-              {awards?.next && (
-                <div className="award-card">
-                  <div className="award-icon award-locked"><Lock size={24} strokeWidth={1.75} aria-hidden /></div>
-                  <div className="award-info">
-                    <div className="award-name">{awards.next.name}</div>
-                    <div className="award-desc">{awards.next.hours - awards.verified_hours}h to go ({awards.next.hours}h)</div>
-                    <div className="progress-bar"><div className="progress-fill" style={{ width: `${Math.min(100, (awards.verified_hours / awards.next.hours) * 100)}%` }} /></div>
-                  </div>
-                </div>
-              )}
-              {(awards?.earned.length ?? 0) === 0 && !awards?.next && (
-                <div className="empty"><div className="empty-icon"><Trophy size={40} strokeWidth={1.75} aria-hidden /></div>Log verified hours to start earning awards.</div>
-              )}
-              </>
+              <h1 className="dash-h">Goals</h1>
+              {dataError ? sectionError : dataLoading || !goalsQ.data ? skelPanel : (
+                <GoalsPanel data={goalsQ.data} active={goalRows.active} completed={goalRows.completed} mutate={goalsQ.mutate} />
               )}
             </div>
           )}
@@ -436,7 +409,7 @@ export default function DashboardPage() {
               <div className="lb-band">
                 <div className="lb-stat"><div className="lb-stat-num">{stats.verified}</div><div className="lb-stat-label">Verified Hours</div></div>
                 <div className="lb-stat"><div className="lb-stat-num">{apps.length}</div><div className="lb-stat-label">Opportunities</div></div>
-                <div className="lb-stat"><div className="lb-stat-num">{awards?.earned.length ?? 0}</div><div className="lb-stat-label">Awards</div></div>
+                <div className="lb-stat"><div className="lb-stat-num">{goalRows.completed.length}</div><div className="lb-stat-label">Goals Met</div></div>
               </div>
               )}
             </div>

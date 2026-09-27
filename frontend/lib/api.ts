@@ -10,19 +10,23 @@ import type {
   AdminOrg,
   Application,
   ApplicationWithOpportunity,
+  CalendarItem,
   ConsentContext,
   ConsentOverdue,
   ConsentManageContext,
+  Goal,
   Hours,
   HoursWithOpportunity,
   LeaderboardEntry,
   Message,
   MyAwards,
+  MyGoals,
   Notification,
   Opportunity,
   OpportunityCreateInput,
   OpportunityTemplate,
   OrgReviews,
+  PersonalEventInput,
   PublicPortfolio,
   Review,
   OrgAnalytics,
@@ -247,6 +251,57 @@ export const api = {
 
   selfReportHours: (input: { opportunity_id: string; hours: number; note?: string }, token: string) =>
     request<HoursWithOpportunity>("/hours", { method: "POST", body: JSON.stringify(input), token }),
+
+  // Volunteering outside Citoya (2026-09-27): no listing, always "unverified".
+  logOffsiteHours: (
+    input: { activity: string; occurrence_date: string; hours: number; note?: string; supervisor_name?: string },
+    token: string,
+  ) => request<HoursWithOpportunity>("/hours/offsite", { method: "POST", body: JSON.stringify(input), token }),
+
+  // Every row, for the hours PDF (M16.2). `GET /hours` returns 100 by default and
+  // at most 200 a page, so one call would silently cut a long history short.
+  listAllHours: async (token: string) => {
+    const all: HoursWithOpportunity[] = [];
+    for (let offset = 0; ; offset += 200) {
+      const page = await request<HoursWithOpportunity[]>(`/hours?limit=200&offset=${offset}`, { token });
+      all.push(...page);
+      if (page.length < 200) return all;
+    }
+  },
+
+  // ── Calendar (M16.4) ──
+  // `end` is exclusive; the backend allows a window of up to 62 days.
+  myCalendar: (start: string, end: string, token: string) =>
+    request<CalendarItem[]>(`/calendar/mine?start=${start}&end=${end}`, { token }),
+  createCalendarEvent: (input: PersonalEventInput, token: string) =>
+    request<unknown>("/calendar/events", { method: "POST", body: JSON.stringify(input), token }),
+  deleteCalendarEvent: (eventId: string, token: string) =>
+    request<void>(`/calendar/events/${eventId}`, { method: "DELETE", token }),
+
+  // The calendar feed (M16.5): the link is shown once, so these return the raw token
+  // only from create. The URLs point at the API itself, which serves the .ics.
+  calendarFeedStatus: (token: string) => request<{ active: boolean }>("/calendar/feed", { token }),
+  createCalendarFeed: (token: string) => request<{ token: string }>("/calendar/feed", { method: "POST", token }),
+  deleteCalendarFeed: (token: string) => request<void>("/calendar/feed", { method: "DELETE", token }),
+  calendarFeedUrls: (feedToken: string) => {
+    const https = `${API_URL}/calendar/feed/${feedToken}.ics`;
+    const webcal = https.replace(/^https?:\/\//, "webcal://");
+    return { https, webcal, google: `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcal)}` };
+  },
+
+  // ── Goals (M16.3) ──
+  listGoals: (token: string) => request<MyGoals>("/goals", { token }),
+  createGoal: (
+    input: Pick<Goal, "title" | "target_hours" | "period" | "every" | "unit"> & { start_date?: string },
+    token: string,
+  ) => request<Goal>("/goals", { method: "POST", body: JSON.stringify(input), token }),
+  deleteGoal: (goalId: string, token: string) => request<void>(`/goals/${goalId}`, { method: "DELETE", token }),
+  reorderGoals: (ids: string[], token: string) =>
+    request<Goal[]>("/goals/order", { method: "PUT", body: JSON.stringify({ ids }), token }),
+
+  // Off-site entries only; the backend refuses a listing-backed row (403).
+  deleteHours: (hoursId: string, token: string) =>
+    request<void>(`/hours/${hoursId}`, { method: "DELETE", token }),
 
   appealHours: (hoursId: string, note: string, token: string) =>
     request<HoursWithOpportunity>(`/hours/${hoursId}/appeal`, {

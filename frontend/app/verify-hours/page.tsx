@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ApiError, api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
+import { hoursTitle } from "@/lib/hours";
 import { useAuthedQuery } from "@/lib/use-api";
 import type { HoursWithOpportunity } from "@/lib/types";
 
@@ -81,7 +82,7 @@ export default function VerifyHoursPage() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <h3 className="opp-title">
-                  {entry.opportunity.title}
+                  {hoursTitle(entry)}
                   {entry.status === "appealed" && <span className="badge badge-pending ml-2">Appealed</span>}
                 </h3>
                 <p className="opp-org">

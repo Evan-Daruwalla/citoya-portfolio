@@ -1,14 +1,14 @@
 # features — citoya-v2
 
-Last updated 2026-09-26.
+Last updated 2026-09-27.
 
 ## Milestone status (PRD M1–M11)
 - **Done:** M1–M9 (see below), **M10 COMPLETE** (`docker compose up --build` verified by Evan
   2026-07-12 — full stack boots, migrations applied on real Postgres), **M12 v1 visual parity**
   (2026-07-12), and two off-roadmap Evan-directed 2026-07-13 blocks: **v1 EXACT-COPY** (all 13
   screens rebuilt in the scoped `.v1` architecture — see architecture.md/conventions.md) and a
-  **public-portfolio slice**. **633 collected (628 passed + 5 skipped on SQLite; 633 passed on Postgres), migrations 0001-0033 (2026-09-26 23:19-23:23 CDT, record CG;
-  supersedes 589 of ~01:14 (BV), 588 of ~00:40 (BU), 582 of 2026-09-25 ~22:06 (BS), 578 of 2026-09-24 ~23:49 (BR), 542 of ~22:43 (BQ), 533 of ~21:09 (BJ), 516 of 2026-09-23 ~22:20 CDT, 513 of 21:08, 512 of ~20:58, 509 of ~20:45, 508 of ~16:20, 507 of ~15:48 the same day and 454/0001–0029 of 2026-09-20, which superseded the 327/0001–0024 figure of 2026-08-19, which superseded 189/0001–0021). M11 launch = BLOCKED-ON-EVAN (host, domain/DNS, prod
+  **public-portfolio slice**. **684 collected (679 passed + 5 skipped on SQLite; 684 passed on Postgres), migrations 0001-0037 (2026-09-27 18:14-18:20 CDT, record CO;
+  supersedes 682 of ~17:44 (CN), 673 of ~17:32 (CM), 665 of ~17:17 (CL), 646 of ~16:54 (CJ), 633 of 2026-09-26 ~23:23 (CG), 589 of ~01:14 (BV), 588 of ~00:40 (BU), 582 of 2026-09-25 ~22:06 (BS), 578 of 2026-09-24 ~23:49 (BR), 542 of ~22:43 (BQ), 533 of ~21:09 (BJ), 516 of 2026-09-23 ~22:20 CDT, 513 of 21:08, 512 of ~20:58, 509 of ~20:45, 508 of ~16:20, 507 of ~15:48 the same day and 454/0001–0029 of 2026-09-20, which superseded the 327/0001–0024 figure of 2026-08-19, which superseded 189/0001–0021). M11 launch = BLOCKED-ON-EVAN (host, domain/DNS, prod
   secrets, Resend key, Turnstile key, SUPPORT_EMAIL, legal).**
 - **M13 / M14 (added 2026-09-02).** This section stopped at M9/M10/M12 while INDEX.md
   routed every reader here for milestone status — so a session following INDEX's own
@@ -61,6 +61,43 @@ Last updated 2026-09-26.
   page offers "Delete my review" or, for an admin, "Remove (admin)". Since 2026-09-26 (BW)
   every review but your own also has a "Report" link: the same `ReportConcern` mailto to
   support as listings and messages, handled under `docs/SUPPORT_PROCEDURES.md` P5.
+- **Off-site hours (2026-09-27, M16.1, Evan's pick):** a student logs volunteering done outside
+  Citoya (`POST /hours/offsite`: activity, date, hours up to 24, optional supervisor and note;
+  consent-gated). The row has no listing, source `offsite`, status `unverified` forever, and
+  shows labelled "Self-reported, unverified" on /hours and the dashboard, which totals it
+  separately. It never reaches a verified total, the leaderboard, the portfolio, awards or any
+  org (all count status `verified`; the org branch of `GET /hours` joins the listing). The
+  student can delete their own off-site rows (`DELETE /hours/{id}`, 403 on a listing-backed
+  row); account deletion hard-deletes them.
+- **Hours PDF (2026-09-27, M16.2, Evan's pick: print layout, no PDF library):** the dashboard's
+  Hours History tab links "Download PDF" to `/hours/report?print=1`, a `.v1` page laid out for
+  paper that opens the browser's print dialog once the rows load; the student picks "Save as
+  PDF". Every row, oldest first (`api.listAllHours` pages past the API's 200-row cap), with
+  verified, pending and self-reported totals kept apart and a note saying what each means.
+- **Calendar feed (2026-09-27, M16.5, Evan's pick: private, WITH addresses):** under the
+  dashboard calendar, "Create my calendar link" gives Add to Apple Calendar (webcal://), Add to
+  Google Calendar and Copy link, shown once; Reset and Turn off after. The feed
+  (`/calendar/feed/{token}.ics`) is the same schedule as `/calendar/mine` for the past 30 and next
+  181 days, as RFC 5545 from `services/ics.py`. Security rules: security.md (the second
+  credential in a URL, after the stream ticket). A real subscribe needs a public HTTPS URL, so it is tested on staging.
+- **Calendar and own events (2026-09-27, M16.4):** `GET /calendar/mine?start&end` (at most 62
+  days) is the student's schedule: every occurrence of each APPROVED signup (excluded dates and
+  single-date subscriptions honored; cancelled listings and unapproved orgs left out, as in
+  auto-log) plus their own events (`POST/DELETE /calendar/events`: private, never hours, not
+  consent-gated). `services/schedule.py` holds the date logic auto-log also uses. The dashboard
+  Calendar tab reads it a month at a time with prev/next buttons; own events are gold chips (click
+  to delete), signups link to the listing. Before, the tab drew one chip per application whatever
+  its status, and only a recurring event's first date.
+- **Goals replace awards on the dashboard (2026-09-27, M16.3):** `GET/POST /goals`,
+  `PUT /goals/order`, `DELETE /goals/{id}` (student only, private, not consent-gated). The five
+  old milestones are seeded once as default goals (`users.goals_seeded`, claimed with a
+  conditional UPDATE so two first visits cannot both seed); presets add three repeating ones.
+  Periods: all, week, month, year (repeating from the start date), calendar_year (Jan 1),
+  custom every N days/weeks/months. Progress is computed in the browser (`lib/goals.ts`) from
+  verified + off-site hours; met goals move to a Completed section until their period resets.
+  Move up / Move down, no drag and drop. `/awards/my` and the portfolios still show awards (T4).
+  Since then every student page reads ALL hours rows under `hours/mine` (`api.listAllHours`);
+  it held the newest 100 only.
 - **Roster CSV export is free for every org (2026-09-26, #8 option A).** The pricing page, the
   terms and the dashboard upgrade copy used to sell it as Pro. It is built in the browser from
   data the org already loads, so a plan gate would have enforced nothing.

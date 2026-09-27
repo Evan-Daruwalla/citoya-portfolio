@@ -36,4 +36,4 @@ export const IS_STAGING =
 // tracks material changes" promise both pages make (their own Changes section)
 // could go stale in up to 3 of the 4 spots silently (pre-mortem 2026-09-05, NT2).
 // Bump this ONE constant, not the pages, on any content edit to either page.
-export const LEGAL_LAST_REVISED = "2026-09-26";
+export const LEGAL_LAST_REVISED = "2026-09-27";

@@ -106,27 +106,86 @@ export interface ApplicationWithOpportunity extends Application {
 // ── Hours & awards ──
 export interface Hours {
   id: string;
-  opportunity_id: string;
+  // Null only for an off-site entry (2026-09-27): volunteering outside Citoya.
+  opportunity_id: string | null;
   user_id: string;
   occurrence_date: string | null;
   hours: number;
-  status: "pending" | "verified" | "denied" | "appealed";
-  source: "auto" | "self" | "checkin";
+  // "unverified" is off-site only: no organization can confirm it, ever.
+  status: "pending" | "verified" | "denied" | "appealed" | "unverified";
+  source: "auto" | "self" | "checkin" | "offsite";
   note: string | null;
   supervisor_name: string | null;
   deny_note: string | null;
   appeal_note: string | null;
   appealed: boolean;
+  // What an off-site entry was; null on every other row.
+  activity: string | null;
   created_at: string;
 }
 
 export interface HoursWithOpportunity extends Hours {
-  opportunity: Opportunity;
+  opportunity: Opportunity | null;
   // Org-facing only (org branch of GET /hours); null on a student's own list.
   student_name?: string | null;
   student_email?: string | null;
   // See ApplicationWithOpportunity.student_inactive.
   student_inactive?: boolean;
+}
+
+// ── Calendar (M16.4, 2026-09-27) ──
+// One entry on the student's calendar: an occurrence of an approved signup, or one of
+// the student's own events (private, never hours).
+export interface CalendarItem {
+  kind: "signup" | "personal";
+  id: string;
+  opportunity_id: string | null;
+  title: string;
+  org_name: string | null;
+  date: string; // local date in `timezone`
+  all_day: boolean;
+  starts_at: string | null; // UTC instant; null for an all-day own event
+  ends_at: string | null;
+  timezone: string;
+  location: string | null;
+  note: string | null;
+}
+
+export interface PersonalEventInput {
+  title: string;
+  date: string;
+  start_time?: string;
+  end_time?: string;
+  timezone: string;
+  location?: string;
+  note?: string;
+}
+
+// ── Goals (M16.3, 2026-09-27) ──
+export interface Goal {
+  id: string;
+  title: string;
+  target_hours: number;
+  period: "all" | "week" | "month" | "year" | "calendar_year" | "custom";
+  every: number | null;
+  unit: "day" | "week" | "month" | null;
+  start_date: string;
+  position: number;
+  created_at: string;
+}
+
+export interface GoalPreset {
+  key: string;
+  title: string;
+  target_hours: number;
+  period: Goal["period"];
+  every: number | null;
+  unit: Goal["unit"];
+}
+
+export interface MyGoals {
+  goals: Goal[];
+  presets: GoalPreset[];
 }
 
 export interface Award {

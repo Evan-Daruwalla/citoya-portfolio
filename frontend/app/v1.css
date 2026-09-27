@@ -525,3 +525,46 @@
 .v1 .award-icon svg { display: block; }
 .v1 .award-achieved svg { color: var(--amber); }
 .v1 .award-locked svg { color: var(--muted); }
+
+/* Calendar (M16.4, 2026-09-27): signup chips link to the listing; own events are gold
+   (dark text on --gold-pale, the staging banner's pairing: white on --gold is ~2:1). */
+.v1 a.cal-event, .v1 button.cal-event { display: block; width: 100%; text-align: left; border: 0; font: inherit; font-size: .65rem; font-weight: 600; cursor: pointer; text-decoration: none; }
+.v1 .cal-event.personal { background: var(--gold-pale); color: #6b5518; box-shadow: inset 0 0 0 1px var(--gold-l); }
+.v1 a.cal-event:focus-visible, .v1 button.cal-event:focus-visible { outline: 2px solid var(--green); outline-offset: 1px; }
+.v1 .cal-legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; font-size: .78rem; color: var(--muted); }
+.v1 .cal-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.v1 .cal-swatch { width: 12px; height: 12px; border-radius: 3px; background: var(--green); display: inline-block; }
+.v1 .cal-swatch.personal { background: var(--gold-pale); box-shadow: inset 0 0 0 1px var(--gold); }
+
+/* Goals (M16.3, 2026-09-27): the award card layout, plus Move up / Move down / Delete. */
+.v1 .goal-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.v1 .goal-btn { width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 8px; background: #fff; color: var(--muted); cursor: pointer; transition: border-color .2s var(--ease), color .2s var(--ease); }
+.v1 .goal-btn:hover:not(:disabled) { border-color: var(--green-mid); color: var(--green); }
+.v1 .goal-btn:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.v1 .goal-btn:disabled { opacity: .35; cursor: default; }
+.v1 .goal-section { font-family: var(--font-display); font-size: 1.05rem; color: var(--dark); margin: 26px 0 12px; }
+
+/* Hours report (M16.2, 2026-09-27): /hours/report is laid out for paper and printed with
+   the browser's "Save as PDF". In print only the report remains: the v1 nav and footer
+   and the page's own buttons go, the table repeats its header on each page, and a row
+   never splits across pages. The staging banner stays, so a staging PDF says so. */
+.v1 .hours-report { max-width: 820px; }
+.v1 .hr-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 24px; }
+.v1 .hr-actions .btn-p { display: inline-flex; align-items: center; gap: 8px; }
+.v1 .hr-head { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.v1 .hr-title { font-family: var(--font-display); font-size: 1.6rem; color: var(--dark); margin: 0; }
+.v1 .hr-sub { color: var(--muted); font-size: .86rem; margin: 2px 0 0; }
+.v1 .hr-totals { display: flex; gap: 28px; flex-wrap: wrap; margin-bottom: 18px; font-size: .86rem; color: var(--text); }
+.v1 .hr-num { font-family: var(--font-display); font-size: 1.35rem; color: var(--green); margin-right: 4px; }
+.v1 .hr-note { color: var(--muted); font-size: .78rem; line-height: 1.55; margin-top: 16px; }
+@media print {
+  @page { margin: 14mm; }
+  body:has(.hours-report) .v1-nav,
+  body:has(.hours-report) .v1-footer,
+  .v1 .hours-report .no-print { display: none !important; }
+  body:has(.hours-report), body:has(.hours-report) .v1 { background: #fff !important; }
+  .v1 .hours-report { max-width: none; padding: 0; margin: 0; }
+  .v1 .hr-table { box-shadow: none; border-radius: 0; }
+  .v1 .hr-table thead { display: table-header-group; }
+  .v1 .hr-table tr { break-inside: avoid; }
+}

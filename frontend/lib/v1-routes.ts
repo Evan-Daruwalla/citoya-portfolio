@@ -1,7 +1,7 @@
 // Routes that render their own exact-v1 chrome (V1Shell = v1 nav + footer).
 // The global SiteHeader/SiteFooter suppress themselves on these so there's no
 // double nav. Add a route here the moment its page is converted to v1.
-export const V1_ROUTES = ["/", "/discover", "/dashboard", "/applicants", "/leaderboard", "/login", "/register", "/welcome", "/forgot", "/reset", "/pricing", "/for-organizations", "/donate", "/privacy", "/terms", "/portfolio", "/admin"];
+export const V1_ROUTES = ["/", "/discover", "/dashboard", "/applicants", "/leaderboard", "/login", "/register", "/welcome", "/forgot", "/reset", "/pricing", "/for-organizations", "/donate", "/privacy", "/terms", "/portfolio", "/admin", "/hours/report"];
 
 export function isV1Route(pathname: string): boolean {
   if (V1_ROUTES.includes(pathname)) return true;
