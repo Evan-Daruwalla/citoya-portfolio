@@ -20,3 +20,35 @@ export function consentGated(
   if (age >= 18) return false;
   return user.guardian_consent_status !== "verified";
 }
+
+/**
+ * Whether the latest guardian invite went out (`guardian_invite_sent` on /auth/me). The
+ * welcome page and the consent banner said "We emailed" from fixed text, even after a
+ * failed send (record AU's open item, fixed 2026-09-27). Only "sent" may claim an email.
+ * `tests/test_frontend_consent_gate.py` pins the three states and their copy.
+ */
+export type InviteState = "sent" | "failed" | "unknown";
+
+export function inviteState(user: Pick<User, "guardian_invite_sent">): InviteState {
+  if (user.guardian_invite_sent === true) return "sent";
+  if (user.guardian_invite_sent === false) return "failed";
+  return "unknown";
+}
+
+export const INVITE_COPY: Record<InviteState, { banner: string; welcome: string }> = {
+  sent: {
+    banner: " We emailed them a link. If it hasn't arrived, ask them to check their spam or junk folder.",
+    welcome:
+      "We emailed your parent or guardian to approve your account. You can look around now. Signing up for opportunities unlocks once they approve.",
+  },
+  failed: {
+    banner: " We couldn't send them the approval email yet. Press Resend to try again.",
+    welcome:
+      "We couldn't email your parent or guardian yet. Open your dashboard and press Resend approval email. You can look around now; signing up unlocks once they approve.",
+  },
+  unknown: {
+    banner: " If they haven't received an approval email, ask them to check their spam folder, or press Resend.",
+    welcome:
+      "Your parent or guardian needs to approve your account. You can look around now. Signing up for opportunities unlocks once they approve.",
+  },
+};

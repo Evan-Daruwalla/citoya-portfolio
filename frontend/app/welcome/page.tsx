@@ -6,6 +6,7 @@ import { useEffect } from "react";
 
 import { V1Shell } from "@/components/v1/v1-shell";
 import { useAuth } from "@/lib/auth-context";
+import { INVITE_COPY, inviteState } from "@/lib/consent";
 
 type Step = { title: string; body: string; href: string | null; link: string | null };
 
@@ -26,10 +27,12 @@ export default function WelcomePage() {
   const studentSteps: Step[] = [
     consentPending
       ? {
-          title: "Approval on the way",
-          body: "We emailed your parent or guardian to approve your account. You can look around now. Signing up for opportunities unlocks once they approve.",
-          href: null,
-          link: null,
+          // Only a SENT invite may claim an email (record AU's open item, 2026-09-27); a
+          // failed one points at the dashboard, where the banner's Resend button lives.
+          title: inviteState(user) === "failed" ? "Approval email not sent yet" : "Approval on the way",
+          body: INVITE_COPY[inviteState(user)].welcome,
+          href: inviteState(user) === "failed" ? "/dashboard" : null,
+          link: inviteState(user) === "failed" ? "Open your dashboard" : null,
         }
       : {
           title: "Browse Discover",

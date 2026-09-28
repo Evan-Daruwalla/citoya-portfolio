@@ -31,6 +31,8 @@ export interface User {
   created_at: string;
   dob: string | null;
   guardian_consent_status: ConsentStatus;
+  // The latest guardian invite's outcome: true sent, false failed, null never attempted.
+  guardian_invite_sent?: boolean | null;
 }
 
 export interface ConsentContext {

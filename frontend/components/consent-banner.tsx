@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { ApiError, api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
-import { CONSENT_GATED_COPY, consentGated } from "@/lib/consent";
+import { CONSENT_GATED_COPY, INVITE_COPY, consentGated, inviteState } from "@/lib/consent";
 
 /** Shown to a signed-in student who isn't yet consent-cleared (pending/declined/
  *  revoked). Lets them resend the guardian email and re-check their status. */
@@ -26,6 +26,9 @@ export function ConsentBanner() {
       const token = localStorage.getItem(TOKEN_KEY);
       const res = await api.requestConsent(token ?? "");
       setMessage(res.message);
+      // The resend's outcome is now on the user; refresh so the line above stops saying
+      // it failed once it has gone out.
+      await refresh();
     } catch (err) {
       setMessage(err instanceof ApiError ? err.message : "Couldn't resend the email.");
     } finally {
@@ -54,8 +57,9 @@ export function ConsentBanner() {
         {/* The spam line (pre-mortem 2026-09-22, T5): a new domain sending "approve your
             student's account" with a link looks like phishing, and a spam-foldered
             invite is invisible to us. The family is the only one who can look. */}
+        {/* Only a SENT invite may claim an email (record AU's open item, 2026-09-27). */}
         {status === "pending"
-          ? " We emailed them a link. If it hasn't arrived, ask them to check their spam or junk folder."
+          ? INVITE_COPY[inviteState(user)].banner
           : " Contact support if this was a mistake."}
       </p>
       {status === "pending" && (
