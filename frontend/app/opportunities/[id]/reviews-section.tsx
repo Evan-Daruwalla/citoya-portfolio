@@ -11,19 +11,21 @@ import { consentGated } from "@/lib/consent";
 import { usePublicQuery } from "@/lib/use-api";
 
 export function ReviewsSection({ orgId, opportunityId }: { orgId: string; opportunityId: string }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   // Public: reviews render for a signed-out visitor, same as the listing around
   // them. Until this conversion the load was `.catch(() => undefined)` — a
   // failed fetch left `data` null and the card rendered as a bare "Reviews"
   // heading, indistinguishable from an org that has never been reviewed.
   // The key includes the viewer (as F23 did for the listing): with a token the response
   // marks the caller's own review. What actually keeps one user's `mine` from reaching
-  // another is the auth context clearing the SWR cache on login and logout; while auth is
-  // still loading, the key reads `:anon` even though the token is sent (same as F23).
-  const { data, loading, error, retry, mutate } = usePublicQuery(
-    `orgs/${orgId}/reviews:${user?.id ?? "anon"}`,
+  // another is the auth context clearing the SWR cache on login and logout. The key
+  // waits for auth to settle, as the listing's does (record CQ): keyed `:anon` while
+  // auth loaded, a token-bearing answer was filed under `:anon`.
+  const { data, loading: reviewsLoading, error, retry, mutate } = usePublicQuery(
+    authLoading ? null : `orgs/${orgId}/reviews:${user?.id ?? "anon"}`,
     () => api.orgReviews(orgId, localStorage.getItem(TOKEN_KEY) ?? undefined),
   );
+  const loading = authLoading || reviewsLoading;
   const [rating, setRating] = useState(5);
   const [text, setText] = useState("");
   // The WRITE's error stays separate from the LOAD's, the same split the parent

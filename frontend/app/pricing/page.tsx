@@ -56,7 +56,7 @@ export default function PricingPage() {
           <div className="price-card pro">
             <div className="pc-flag">Most Popular</div>
             <div className="pc-name">Pro <Star size={16} strokeWidth={1.75} aria-hidden style={{ color: "var(--gold)" }} /></div>
-            <div className="pc-price">$19<span> / month</span></div>
+            <div className="pc-price">$6.99<span> / month</span></div>
             <div className="pc-blurb">For organizations that run many programs and want to grow faster.</div>
             <ul className="pc-list">
               <li>Everything in Community</li>

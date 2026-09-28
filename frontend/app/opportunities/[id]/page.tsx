@@ -25,9 +25,9 @@ const RECURRENCE_LABEL: Record<string, string> = {
 
 export default function OpportunityDetailPage() {
   const params = useParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   // Public: a shared listing link must render for a signed-out visitor, so this
-  // stays `usePublicQuery` and must not wait on auth hydration. The token is read
+  // stays `usePublicQuery`. The token is read
   // at FETCH time, never at render time — `use-api.ts` does the same, because
   // touching localStorage during render differs between server and client.
   //
@@ -37,10 +37,17 @@ export default function OpportunityDetailPage() {
   // dependent (an owner sees an unapproved listing, everyone else a 404), so a
   // signed-out 404 must not be served to the signed-in owner from cache. `user`,
   // not the token, because the token must not be read during render.
-  const { data: opp, loading, error, retry } = usePublicQuery(
-    `opportunities/${params.id}:${user?.id ?? "anon"}`,
+  //
+  // The key waits for auth to settle (audit 2026-09-24, fixed 2026-09-27, record CQ).
+  // Keyed `:anon` while `/auth/me` was in flight, a signed-in load fetched WITH the
+  // token, filed the owner's answer under `:anon`, then fetched again under its own
+  // id: two listing GETs per load, measured. The cost: a signed-in load now waits one
+  // `/auth/me` round trip; a signed-out one waits one render.
+  const { data: opp, loading: oppLoading, error, retry } = usePublicQuery(
+    authLoading ? null : `opportunities/${params.id}:${user?.id ?? "anon"}`,
     () => api.getOpportunity(params.id, localStorage.getItem(TOKEN_KEY) ?? undefined),
   );
+  const loading = authLoading || oppLoading;
   // The WRITE's error is kept separate from the LOAD's. One `error` string used
   // to serve both, so a failed Feature toggle and a failed page load rendered
   // the same red line, and either one cleared the other.

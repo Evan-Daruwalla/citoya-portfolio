@@ -277,3 +277,16 @@ upgrade path — built the same session (see the record entry of 2026-08-31
 ~22:12 CDT and the commit that follows it). The refund-policy draft (cancel
 anytime, end-of-period, no proration) was accepted in the same batch; it is
 moot while billing is free-tier-only but stands in the ToS.
+
+## Price decided (appended 2026-09-27, record CQ)
+
+Evan set Pro at **$6.99 a month** on 2026-09-27, closing follow-up #2. The sections above
+keep their $19 and $29 as written.
+- **Code:** `STRIPE_PRO_PRICE_CENTS` defaults to 699, and `frontend/app/pricing/page.tsx`
+  shows "$6.99 / month".
+- **Pinned:** `backend/tests/test_billing.py::test_the_pricing_page_shows_the_price_checkout_charges`
+  fails if either changes without the other. Checkout's amount, currency and interval are
+  now asserted too.
+- **No Stripe dashboard change:** checkout builds the price inline (`price_data`).
+- **Railway:** a `STRIPE_PRO_PRICE_CENTS` variable on a service overrides the default, so it
+  must be absent or `699`.

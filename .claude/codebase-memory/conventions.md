@@ -107,6 +107,12 @@ the `#fragment`, read with `useSyncExternalStore`). Dynamic route params use `us
   at all, which is what keeps that order coherent.
 - **Hold a conditional fetch with a `null` key, never an `if` around the hook** — zero requests,
   hook rules intact (`signup-section`, which needs no dates for a one-time listing).
+- **A PUBLIC query whose answer depends on the viewer holds its key until auth settles**
+  (`authLoading ? null : ...:${user?.id ?? "anon"}`; listing detail and reviews, 2026-09-27,
+  record CQ). Keyed `:anon` during hydration, a signed-in load sent its token, filed the
+  answer under `:anon`, then fetched again: 2 listing GETs per load, 1 after. Cost: one
+  `/auth/me` round trip before the fetch. Fold `authLoading` into the page's `loading`, or
+  the null key renders nothing at all.
 - **A select's default comes from the DATA during render, never from an effect**
   (2026-09-20, `org-checkin-section`): `const value = picked || options[0] || ""`, not a
   `useEffect` calling `setSelected(keys[0])`. Same behaviour, one less render pass, and it
