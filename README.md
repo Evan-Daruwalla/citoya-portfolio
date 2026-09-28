@@ -31,4 +31,4 @@ gaps from memory.
 
 *The build logs mention env-variable names (e.g. `STRIPE_SECRET_KEY`);
 no secret values have ever been committed to either repo — a scanner gates every
-commit.*
+commit once `core.hooksPath` is activated in each clone.*

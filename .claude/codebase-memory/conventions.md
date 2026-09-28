@@ -55,6 +55,27 @@ the `#fragment`, read with `useSyncExternalStore`). Dynamic route params use `us
 - **`FOR UPDATE` is a no-op on SQLite**, so the race is still reproducible in the
   default suite; see `testing.md`.
 
+## Duplicate inserts: a DB constraint plus `conflict_as_409` (2026-09-27, audit CH)
+
+- **Every "already exists?" check is read-then-write**, so two simultaneous requests both
+  pass it. The backstop is a unique constraint or index in the DB, and the route wraps the
+  INSERT's flush/commit in `with conflict_as_409(db, <the checked path's message>):`
+  (`app/api/conflict.py`) so the race answers the same 409, not a 500. Wrap the FLUSH when
+  the route flushes early for the new id. Sites: apply, self-report, check-in, review.
+- **Test it with a forced interleaving, not two sequential requests** (those never race):
+  `tests/test_duplicate_races.py` commits the competing row from a second session inside a
+  `before_flush` listener. Apply uses the same-flush mode: it holds the listing FOR UPDATE,
+  and a second session's FK check would wait on it forever on Postgres.
+
+## Batch jobs: one SAVEPOINT per item (2026-09-27, audit CH)
+
+- **A loop over accounts or rows in one transaction runs each item in `with
+  db.begin_nested():`** inside a try/except that logs and continues
+  (`finalize_due_deletions`). A bare `except` is not enough: it would commit a failed
+  item's partial writes, and on Postgres one failed statement aborts the transaction.
+- **On SQLite (tests)** pysqlite opens the transaction at the first SAVEPOINT, so a RELEASE
+  commits there; the end state is the same, but "does not commit" is not testable there.
+
 ## Data fetching: `useAuthedQuery` / `usePublicQuery` (2026-08-31, M13.6)
 - **Never hand-roll `useEffect` + `useState(loading)` + `useState(error)` again.** Use
   `useAuthedQuery(key, fetcher)` for token-bearing endpoints and `usePublicQuery(key, fetcher)` for
