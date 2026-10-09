@@ -74,7 +74,7 @@ export default function MyHoursPage() {
   // minted rows — `created: 0` is the common answer, and there the queries above
   // already hold the truth. The ref is set BEFORE the call so a failure cannot
   // re-fire it on this mount. (Same shape as `dashboard/page.tsx`; the recipe is
-  // in `.claude/codebase-memory/conventions.md` under "A WRITE in a page's loader
+  // in `.claude/project-memory/conventions.md` under "A WRITE in a page's loader
   // never goes inside a fetcher".)
   const autoLogged = useRef(false);
   useEffect(() => {
@@ -166,7 +166,12 @@ export default function MyHoursPage() {
     );
   }
 
-  const oppOptions = apps.map((a) => ({ id: a.opportunity.id, title: a.opportunity.title }));
+  // Audit DY Low 34, 2026-10-07: approved applications only. The backend refuses check-in
+  // and self-report for any other status (hours.py), so a pending or rejected one offered
+  // here could only fail.
+  const oppOptions = apps
+    .filter((a) => a.status === "approved")
+    .map((a) => ({ id: a.opportunity.id, title: a.opportunity.title }));
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-6 p-8">
@@ -428,7 +433,7 @@ export default function MyHoursPage() {
                   <p className="text-[0.78rem] text-muted-foreground">Reason: {entry.deny_note}</p>
                 )}
               </div>
-              <div className="flex flex-shrink-0 flex-col items-end gap-2">
+              <div className="flex shrink-0 flex-col items-end gap-2">
                 <span className={`status-pill ${HOURS_STATUS_PILL[entry.status] ?? "sp-pending"}`}>
                   {HOURS_STATUS_LABEL[entry.status] ?? entry.status}
                 </span>

@@ -14,7 +14,7 @@ for the Citoya v2 rewrite; talks to the FastAPI backend in the sibling `../backe
 ## Stack
 - **Next.js 16** (App Router, React Server Components)
 - **React 19** + **TypeScript**
-- **Tailwind CSS 3** (shadcn design tokens in `app/globals.css`)
+- **Tailwind CSS 4** (shadcn design tokens in `app/globals.css`)
 - **shadcn/ui** — copy-in component library (`components/ui/`)
 - **lucide-react** icons
 
@@ -69,7 +69,7 @@ app/
   consent/
     decide/page.tsx         # guardian approve/decline; token read from the URL fragment
     manage/page.tsx      # guardian revoke; token read from the URL fragment
-  globals.css    # Tailwind directives + shadcn CSS variables (light/dark) + v1 component vocabulary
+  globals.css    # Tailwind 4 import + theme + shadcn CSS variables + v1 component vocabulary
   v1.css         # v1's raw CSS ported verbatim, scoped under a `.v1` root
 components/
   ui/            # shadcn components (4 files: button, input, label, card)
@@ -96,7 +96,6 @@ lib/
                       #   from 4 copies across 2 status domains)
   flags.ts            # NEXT_PUBLIC_BILLING_LIVE gate for the Pro surface (ADR-0002)
 components.json   # shadcn config
-tailwind.config.ts
 ```
 
 ## Auth
@@ -107,8 +106,10 @@ outside the auth context (e.g. the opportunity-apply button) read the token dire
 the exported `TOKEN_KEY` constant.
 
 ## Notes
-- Uses Tailwind v3 for maximum ecosystem stability. To move to Tailwind v4 later,
-  re-run `npx shadcn@latest init` and follow its migration.
+- Tailwind 4 since 2026-10-04 (migrated from 3 with `npx @tailwindcss/upgrade`; the theme now
+  lives in `app/globals.css`, there is no `tailwind.config.ts`). Reason: `npm audit` flagged
+  GHSA-vfj7-8cjw-p6xm (braces) through Tailwind 3's chokidar/micromatch, and Tailwind 4 drops
+  that route.
 - Deployment (future): static/SSR on Vercel, or containerize for AWS Amplify/App Runner,
   GCP Cloud Run, or Azure Static Web Apps / Container Apps. `NEXT_PUBLIC_API_URL` is the
   only required build/runtime var.

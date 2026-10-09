@@ -108,7 +108,12 @@ export default function DashboardPage() {
     return splitGoals(goalsQ.data?.goals ?? [], entries, localDateKey(new Date()));
   }, [hours, goalsQ.data]);
 
-  const oppOptions = apps.map((a) => ({ id: a.opportunity.id, title: a.opportunity.title }));
+  // Audit DY Low 34, 2026-10-07: approved applications only. The backend refuses check-in
+  // and self-report for any other status (hours.py), so a pending or rejected one offered
+  // here could only fail. The Impact tile counts the same list: a pending or rejected
+  // application is not impact.
+  const approvedApps = apps.filter((a) => a.status === "approved");
+  const oppOptions = approvedApps.map((a) => ({ id: a.opportunity.id, title: a.opportunity.title }));
 
   async function submitSelfReport(e: FormEvent) {
     e.preventDefault();
@@ -408,7 +413,7 @@ export default function DashboardPage() {
               {dataError ? sectionError : dataLoading ? skelPanel : (
               <div className="lb-band">
                 <div className="lb-stat"><div className="lb-stat-num">{stats.verified}</div><div className="lb-stat-label">Verified Hours</div></div>
-                <div className="lb-stat"><div className="lb-stat-num">{apps.length}</div><div className="lb-stat-label">Opportunities</div></div>
+                <div className="lb-stat"><div className="lb-stat-num">{approvedApps.length}</div><div className="lb-stat-label">Opportunities</div></div>
                 <div className="lb-stat"><div className="lb-stat-num">{goalRows.completed.length}</div><div className="lb-stat-label">Goals Met</div></div>
               </div>
               )}

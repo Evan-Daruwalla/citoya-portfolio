@@ -20,14 +20,15 @@ import { api } from "@/lib/api";
 import { usePublicQuery } from "@/lib/use-api";
 
 export default function Home() {
-  // Shares the "opportunities" cache with /discover, so arriving here and
-  // clicking through no longer refetches the same list.
+  // The count comes from /stats, not from the length of a list: the list endpoint
+  // returns 60 rows by default, so a longer catalogue read as exactly 60 (audit DY
+  // Med 15, 2026-10-05).
   // `error` is read, not just `data`: without it a failed load left this tile
   // showing "…" forever — a permanent loading state on the public landing page,
   // with no error and no retry (audit 2026-09-02, reproduced against a stopped
   // backend). "—" is the project's established failed-stat glyph.
-  const { data, error } = usePublicQuery("opportunities", () => api.listOpportunities({}));
-  const oppCount = data?.length ?? null;
+  const { data, error } = usePublicQuery("stats", () => api.stats());
+  const oppCount = data?.opportunities ?? null;
 
   return (
     <V1Shell>

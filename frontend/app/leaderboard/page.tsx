@@ -12,18 +12,19 @@ const MEDAL_COLORS = ["var(--gold)", "#9ca3af", "#b45309"];
 export default function LeaderboardPage() {
   const { user } = useAuth();
   // Public: the board renders for signed-out visitors, so this must not wait on
-  // auth. Both requests share one key because the stat band is derived from the
-  // pair — fetching them separately would let the band render against a
-  // half-loaded pair and show wrong totals.
-  const { data, loading, error, retry } = usePublicQuery("leaderboard+opps", async () => {
-    const [board, opps] = await Promise.all([api.leaderboard(), api.listOpportunities({})]);
+  // auth. Both requests share one key so the band and the list load together.
+  // The band comes from /stats, not from the list: the list is the top 25 only, so
+  // counting it made the band read "25 students" for any larger board, and the
+  // opportunity list it used was capped at 60 rows (audit DY Med 15, 2026-10-05).
+  const { data, loading, error, retry } = usePublicQuery("leaderboard+stats", async () => {
+    const [board, stats] = await Promise.all([api.leaderboard(), api.stats()]);
     return {
       entries: board,
       community: {
-        totalHours: board.reduce((s, e) => s + e.hours, 0),
-        students: board.length,
-        orgs: new Set(opps.map((o) => o.org_id)).size,
-        events: opps.length,
+        totalHours: stats.verified_hours,
+        students: stats.students,
+        orgs: stats.organizations,
+        events: stats.opportunities,
       },
     };
   });
@@ -64,6 +65,7 @@ export default function LeaderboardPage() {
             <div className="lb-cols">
               <div>
                 <h3 style={{ color: "var(--dark)", marginBottom: 14 }}><Trophy size={18} strokeWidth={1.75} aria-hidden /> Top Volunteers</h3>
+                <div className="lb-school" style={{ marginBottom: 10 }}>Top 25</div>
                 {entries.length ? (
                   entries.map((v, i) => (
                     <div key={v.rank} className={`lb-row${i < 3 ? " podium" : ""}`}>

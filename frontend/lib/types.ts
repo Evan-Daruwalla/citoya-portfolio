@@ -210,6 +210,14 @@ export interface LeaderboardEntry {
   hours: number;
 }
 
+// GET /stats: platform-wide counts, no names (audit DY Med 15, 2026-10-05).
+export interface PublicStats {
+  opportunities: number;
+  organizations: number;
+  students: number;
+  verified_hours: number;
+}
+
 export interface PublicPortfolio {
   name: string;
   verified_hours: number;
@@ -227,6 +235,13 @@ export interface Review {
   created_at: string;
   // True only for the signed-in author; the listing sets it from an optional token.
   mine: boolean;
+}
+
+// An organization's public face (PRD M17.1, 2026-10-06): only its name; the
+// page's listings and reviews come from their own endpoints.
+export interface PublicOrg {
+  id: string;
+  name: string;
 }
 
 export interface OrgReviews {

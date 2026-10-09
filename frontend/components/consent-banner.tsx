@@ -36,6 +36,17 @@ export function ConsentBanner() {
     }
   }
 
+  // audit DY Med 21, 2026-10-05: a bare `onClick={refresh}` let a failed request
+  // reject unhandled, so the click did nothing visible.
+  async function recheck() {
+    setMessage(null);
+    try {
+      await refresh();
+    } catch {
+      setMessage("Couldn't check your status. Try again.");
+    }
+  }
+
   const heading =
     status === "pending"
       ? "Waiting on your parent/guardian's approval"
@@ -67,7 +78,7 @@ export function ConsentBanner() {
           <button className="btn-p" style={btn} onClick={resend} disabled={busy}>
             {busy ? "Sending…" : "Resend approval email"}
           </button>
-          <button className="btn-s" style={btn} onClick={refresh}>
+          <button className="btn-s" style={btn} onClick={recheck}>
             I&apos;ve been approved. Refresh
           </button>
         </div>

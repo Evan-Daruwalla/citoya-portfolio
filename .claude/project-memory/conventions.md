@@ -41,6 +41,11 @@ the `#fragment`, read with `useSyncExternalStore`). Dynamic route params use `us
 
 ## Capacity: never `db.get(Opportunity, ...)` on a path that moves spots (2026-09-05)
 
+- **Lock, THEN re-read, THEN decide** (2026-10-03, audit DY / record DZ): a path that reads an
+  application's status to move a seat takes the opportunity lock first, then re-selects the
+  row `with_for_update()` + `populate_existing`, then decides. Now true for apply-decide,
+  withdraw, admin reject and `withdraw_from_rosters`. A re-select, not `db.refresh`: a student's
+  withdraw DELETES the row, and refresh raises on a missing row (it is a 404 or a `continue`).
 - Use **`enrollment.get_opportunity_for_update(db, id)`**. `spots_remaining` is a
   read-modify-write, and six sites did it unlocked: two concurrent applies to a
   one-spot listing both read `> 0`, both wrote `0`, both committed an approved

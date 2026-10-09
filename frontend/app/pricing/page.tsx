@@ -45,11 +45,14 @@ export default function PricingPage() {
             <ul className="pc-list">
               <li>Up to 3 active listings</li>
               <li>Applicant management &amp; approvals</li>
-              <li>One-click &amp; bulk hour verification</li>
+              <li>One-click hour verification</li>
+              {/* Not built yet (audit DY Med 20; PRD M17, 2026-10-05). Remove the marker when
+                  the item ships. */}
+              <li>Bulk hour verification <span style={{ color: "var(--muted)", fontSize: ".78em", marginLeft: 6 }}>Coming soon</span></li>
               <li>Direct messaging with volunteers</li>
               <li>Volunteer roster CSV export</li>
               <li>Public organization page with reviews</li>
-              <li>Skill endorsements for students</li>
+              <li>Skill endorsements for students <span style={{ color: "var(--muted)", fontSize: ".78em", marginLeft: 6 }}>Coming soon</span></li>
             </ul>
             <div><Link className="btn-s" style={{ width: "100%", display: "block", textAlign: "center" }} href="/register">Start Free</Link></div>
           </div>
@@ -62,7 +65,7 @@ export default function PricingPage() {
               <li>Everything in Community</li>
               <li className="pc-star">Unlimited active listings</li>
               <li className="pc-star">3 Featured listings, pinned to the top of search</li>
-              <li className="pc-star">Priority support</li>
+              <li className="pc-star">Priority support <span style={{ color: "var(--muted)", fontSize: ".78em", marginLeft: 6 }}>Coming soon</span></li>
             </ul>
             <div>{BILLING_LIVE ? (
               <Link className="btn-p" style={{ width: "100%", display: "block", textAlign: "center" }} href="/register">Get Pro</Link>
@@ -77,7 +80,7 @@ export default function PricingPage() {
         </div>
         <p style={{ fontSize: ".76rem", color: "var(--muted)", marginTop: 14 }}>
           {BILLING_LIVE
-            ? "Checkout is in demo mode right now, so no payment is collected."
+            ? "Pro is billed monthly through Stripe. See the Terms for cancellation and refunds."
             : "Pro subscriptions aren’t open yet — every organization starts on the free Community plan. Pro features arrive after launch."}
         </p>
 

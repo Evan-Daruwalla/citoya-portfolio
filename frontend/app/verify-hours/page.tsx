@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 
+import { StudentCell } from "@/components/student-cell";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ApiError, api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { hoursTitle } from "@/lib/hours";
@@ -23,14 +25,20 @@ export default function VerifyHoursPage() {
   // user must see next to the row they acted on, not in place of the list.
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // Deny is two steps (audit DY Low 33, 2026-10-07): one click opens an optional note
+  // field, a second confirms. A misclick used to deny and notify the student at once.
+  const [denyingId, setDenyingId] = useState<string | null>(null);
+  const [denyNote, setDenyNote] = useState("");
 
-  async function decide(hoursId: string, action: "approve" | "deny") {
+  async function decide(hoursId: string, action: "approve" | "deny", note?: string) {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return;
     setError(null);
     setBusyId(hoursId);
     try {
-      await api.verifyHours(hoursId, action, token);
+      await api.verifyHours(hoursId, action, token, note);
+      setDenyingId(null);
+      setDenyNote("");
       void mutate();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong.");
@@ -85,6 +93,11 @@ export default function VerifyHoursPage() {
                   {hoursTitle(entry)}
                   {entry.status === "appealed" && <span className="badge badge-pending ml-2">Appealed</span>}
                 </h3>
+                {/* The card named only the listing, so an org could not tell whose hours it was
+                    deciding (audit DY Low 33, 2026-10-07). */}
+                <p className="text-sm">
+                  <StudentCell name={entry.student_name} inactive={entry.student_inactive} />
+                </p>
                 <p className="opp-org">
                   {entry.hours}h · {SOURCE_LABEL[entry.source] ?? entry.source}
                 </p>
@@ -93,20 +106,47 @@ export default function VerifyHoursPage() {
                   <p className="text-[0.8rem] text-primary">Appeal: {entry.appeal_note}</p>
                 )}
               </div>
-              <div className="flex flex-shrink-0 gap-2">
+              <div className="flex shrink-0 gap-2">
                 <Button size="sm" disabled={busyId === entry.id} onClick={() => decide(entry.id, "approve")}>
                   Verify
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={busyId === entry.id}
-                  onClick={() => decide(entry.id, "deny")}
+                  disabled={busyId === entry.id || denyingId === entry.id}
+                  onClick={() => {
+                    setDenyingId(entry.id);
+                    setDenyNote("");
+                  }}
                 >
                   Deny
                 </Button>
               </div>
             </div>
+            {denyingId === entry.id && (
+              <div className="mt-3 flex flex-col gap-2">
+                <Input
+                  aria-label="Reason for denying (optional)"
+                  value={denyNote}
+                  onChange={(e) => setDenyNote(e.target.value)}
+                  placeholder="Reason (optional, the student sees it)"
+                  maxLength={500}
+                />
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busyId === entry.id}
+                    onClick={() => decide(entry.id, "deny", denyNote.trim() || undefined)}
+                  >
+                    Confirm deny
+                  </Button>
+                  <Button size="sm" variant="ghost" disabled={busyId === entry.id} onClick={() => setDenyingId(null)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>

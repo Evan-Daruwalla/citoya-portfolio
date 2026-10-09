@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
@@ -32,6 +33,8 @@ export default function NewOpportunityPage() {
   const [pickedZone, setPickedZone] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Set only when the listing exists but its template did not save (audit DY Low 42).
+  const [createdId, setCreatedId] = useState<string | null>(null);
 
   // Fields a template carries over but this form doesn't edit directly — passed
   // through on submit so a template's values aren't lost.
@@ -111,7 +114,17 @@ export default function NewOpportunityPage() {
         token
       );
       if (saveAsTemplate) {
-        await api.saveTemplate(created.id, templateName.trim() || title, token).catch(() => undefined);
+        const templateSaved = await api.saveTemplate(created.id, templateName.trim() || title, token).then(
+          () => true,
+          () => false,
+        );
+        if (!templateSaved) {
+          // audit DY Low 42, 2026-10-07: the failure was swallowed. The listing is kept; stay
+          // here (the submit is locked so it cannot post twice) and say the template is missing.
+          setCreatedId(created.id);
+          setError("Your listing was posted, but the template did not save.");
+          return;
+        }
       }
       router.push(`/opportunities/${created.id}`);
     } catch (err) {
@@ -152,7 +165,7 @@ export default function NewOpportunityPage() {
                   id="template"
                   defaultValue=""
                   onChange={(e) => e.target.value && applyTemplate(e.target.value)}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
                 >
                   <option value="">None</option>
                   {templates.map((t) => (
@@ -173,7 +186,7 @@ export default function NewOpportunityPage() {
                 id="category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
               >
                 {["Environment", "Education", "Health", "Animals", "Community", "Arts"].map((c) => (
                   <option key={c} value={c}>
@@ -214,7 +227,7 @@ export default function NewOpportunityPage() {
                 id="timezone"
                 value={zone}
                 onChange={(e) => setPickedZone(e.target.value)}
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
               >
                 {zoneOptions.map((z) => (
                   <option key={z} value={z}>
@@ -230,7 +243,7 @@ export default function NewOpportunityPage() {
                 id="recurrence"
                 value={recurrence}
                 onChange={(e) => setRecurrence(e.target.value as "one_time" | "weekly" | "monthly")}
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
               >
                 <option value="one_time">One-time</option>
                 <option value="weekly">Weekly</option>
@@ -265,6 +278,20 @@ export default function NewOpportunityPage() {
                 onChange={(e) => setSpots(Number(e.target.value))}
               />
             </div>
+            {/* audit DY Low 32, 2026-10-07: the form sent min_age from templates but never let
+                an org set it. Bounds match the backend schema (ge=0, le=120). */}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="min_age">Minimum age (optional)</Label>
+              <Input
+                id="min_age"
+                type="number"
+                min={0}
+                max={120}
+                value={minAge ?? ""}
+                onChange={(e) => setMinAge(e.target.value === "" ? null : Number(e.target.value))}
+              />
+            </div>
+
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="description">Description</Label>
               <textarea
@@ -273,7 +300,7 @@ export default function NewOpportunityPage() {
                 rows={4}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm"
+                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs"
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -296,7 +323,12 @@ export default function NewOpportunityPage() {
               )}
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" disabled={submitting} className="w-full">
+            {createdId && (
+              <Link href={`/opportunities/${createdId}`} className="text-sm text-primary underline-offset-4 hover:underline">
+                View your listing
+              </Link>
+            )}
+            <Button type="submit" disabled={submitting || createdId !== null} className="w-full">
               {submitting ? "Posting…" : "Post opportunity"}
             </Button>
           </form>

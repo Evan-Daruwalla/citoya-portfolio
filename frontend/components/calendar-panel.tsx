@@ -12,7 +12,7 @@ import { useState, type FormEvent } from "react";
 
 import { ApiError, api } from "@/lib/api";
 import { TOKEN_KEY } from "@/lib/auth-context";
-import { fmtDateKey, localDateKey, viewerTimeZone } from "@/lib/event-time";
+import { eventInstant, fmtDateKey, localDateKey, sameClockAsViewer, viewerTimeZone } from "@/lib/event-time";
 import type { CalendarItem } from "@/lib/types";
 import { useAuthedQuery } from "@/lib/use-api";
 
@@ -21,8 +21,15 @@ const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 function timeLabel(item: CalendarItem): string {
   if (item.all_day || !item.starts_at) return "All day";
   const opts: Intl.DateTimeFormatOptions = { hour: "numeric", minute: "2-digit", timeZone: item.timezone };
-  const start = new Date(item.starts_at).toLocaleTimeString(undefined, opts);
-  return item.ends_at ? `${start} to ${new Date(item.ends_at).toLocaleTimeString(undefined, opts)}` : start;
+  // Audit DY Low 31, 2026-10-07: the event's zone name is appended, once, only when the
+  // viewer's clock reads differently at that instant (the rule fmtEventDateTime uses),
+  // so "6:30 PM" is never silently the event's time for a viewer in another zone.
+  const zoned: Intl.DateTimeFormatOptions = sameClockAsViewer(item.starts_at, item.timezone)
+    ? opts
+    : { ...opts, timeZoneName: "short" };
+  if (!item.ends_at) return eventInstant(item.starts_at).toLocaleTimeString(undefined, zoned);
+  const start = eventInstant(item.starts_at).toLocaleTimeString(undefined, opts);
+  return `${start} to ${eventInstant(item.ends_at).toLocaleTimeString(undefined, zoned)}`;
 }
 
 export function CalendarPanel() {

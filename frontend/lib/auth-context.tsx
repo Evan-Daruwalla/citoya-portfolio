@@ -11,7 +11,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useSWRConfig } from "swr";
 
-import { api, ApiError, TOKEN_KEY } from "@/lib/api";
+import { api, ApiError, SESSION_EXPIRED_EVENT, TOKEN_KEY } from "@/lib/api";
 import type { User } from "@/lib/types";
 
 type RegisterInput = {
@@ -99,11 +99,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
+  // Audit DY Med 16/17, 2026-10-05. Two ways the stored token changes without this
+  // tab calling logout():
+  // - Med 17: the server rejected it (401), so `request` removed the key and fired
+  //   SESSION_EXPIRED_EVENT. Without this the UI stayed signed in until a reload.
+  // - Med 16: another tab signed in, out or in as someone else. The `storage` event
+  //   fires only in the OTHER tabs, so this tab would keep showing the old identity
+  //   and its cached data. Re-read the token and re-hydrate from it.
+  useEffect(() => {
+    function onExpired() {
+      setUser(null);
+      clearCache();
+    }
+    function onStorage(e: StorageEvent) {
+      // `key === null` is localStorage.clear(), which also removed the token.
+      if (e.key !== null && e.key !== TOKEN_KEY) return;
+      // Audit DY Low 38, 2026-10-07: the new token is already in storage when this
+      // fires, so clear now and hydrate from it. Same order as `login`.
+      const token = localStorage.getItem(TOKEN_KEY);
+      clearCache();
+      if (!token) {
+        setUser(null);
+        return;
+      }
+      api
+        .me(token)
+        .then(setUser)
+        .catch((err) => {
+          // Same rule as the hydrate effect: only a rejected token is an answer.
+          if (err instanceof ApiError && err.status === 401) setUser(null);
+        });
+    }
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+      window.removeEventListener("storage", onStorage);
+    };
+    // clearCache closes over SWR's stable `mutate`; re-subscribing every render is
+    // not needed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function login(email: string, password: string, opts?: { restore?: boolean }) {
-    // Before the new identity exists, not after — see clearCache.
-    clearCache();
     const { access_token } = await api.login({ email, password, restore: opts?.restore });
     localStorage.setItem(TOKEN_KEY, access_token);
+    // Audit DY Low 38, 2026-10-07: clear AFTER the new token is stored, before the new
+    // identity is hydrated. Clearing first, while the old token was still in storage,
+    // let SWR refetch the previous account's keys during the login round trip and
+    // re-fill the cache this call had just emptied. `mutate` also discards any request
+    // already in flight, so a late old-token response cannot land after this — see
+    // clearCache.
+    clearCache();
     setUser(await api.me(access_token));
   }
 

@@ -37,7 +37,10 @@ export function OrgCheckinSection({ opp }: { opp: Opportunity }) {
   const [picked, setPicked] = useState("");
   const date = picked || dates[0] || "";
 
-  const [code, setCode] = useState<string | null>(null);
+  // The code AND the date it was minted for. Showing the dropdown's current date
+  // beside a stale code made the org read a date-1 code as date 2's (audit DY
+  // Med 19, 2026-10-05); the label now comes from what was generated.
+  const [generated, setGenerated] = useState<{ date: string; code: string } | null>(null);
   // The WRITE's error stays separate from the LOAD's. One `error` served both
   // until this conversion, so `generate()`'s reset erased a still-true failure to
   // load the dates. Same split as `signup-section`.
@@ -51,7 +54,7 @@ export function OrgCheckinSection({ opp }: { opp: Opportunity }) {
     setBusy(true);
     try {
       const res = await api.createCheckinCode(opp.id, date, token);
-      setCode(res.code);
+      setGenerated({ date, code: res.code });
     } catch (err) {
       setSubmitError(err instanceof ApiError ? err.message : "Something went wrong.");
     } finally {
@@ -123,11 +126,11 @@ export function OrgCheckinSection({ opp }: { opp: Opportunity }) {
           </p>
         )}
 
-        {code && (
+        {generated && (
           <p style={{ fontSize: ".84rem", color: "var(--text)", margin: 0 }}>
-            Code for {date}:{" "}
+            Code for {fmtDateKey(generated.date, { weekday: "short", month: "short", day: "numeric" })}:{" "}
             <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "1.05rem", fontWeight: 700, letterSpacing: ".18em", color: "var(--green)" }}>
-              {code}
+              {generated.code}
             </span>
           </p>
         )}

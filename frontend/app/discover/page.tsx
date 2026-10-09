@@ -39,7 +39,7 @@ export default function DiscoverPage() {
     error,
     retry: loadOpps,
   } = usePublicQuery(`opportunities:${category}`, () =>
-    api.listOpportunities({ category: category || undefined }),
+    api.listAllOpportunities({ category: category || undefined }),
   );
   const opps = oppsData ?? [];
   // Held for anyone who is not a signed-in student: an org has no saved list.

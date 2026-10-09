@@ -10,6 +10,8 @@ import { ApiError, api } from "@/lib/api";
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  // audit DY Med 18, 2026-10-05: bumped on a failed submit to reset the spent token.
+  const [turnstileReset, setTurnstileReset] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -23,6 +25,7 @@ export default function ForgotPasswordPage() {
       setMessage(res.message);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setTurnstileReset((n) => n + 1);
     } finally {
       setSubmitting(false);
     }
@@ -49,7 +52,7 @@ export default function ForgotPasswordPage() {
                   <label htmlFor="forgot-email">Email</label>
                   <input id="forgot-email" className="fc" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
                 </div>
-                <TurnstileWidget onToken={setTurnstileToken} />
+                <TurnstileWidget onToken={setTurnstileToken} resetSignal={turnstileReset} />
                 <button className="fsubmit" style={{ width: "100%" }} type="submit" disabled={submitting}>
                   {submitting ? "Sending…" : "Send Reset Link"}
                 </button>

@@ -22,6 +22,7 @@ interface TurnstileApi {
     "error-callback"?: () => void;
   }) => string;
   remove: (id: string) => void;
+  reset: (id: string) => void;
 }
 
 declare global {
@@ -48,8 +49,17 @@ function loadScript(): Promise<void> {
   });
 }
 
-export function TurnstileWidget({ onToken }: { onToken: (token: string | null) => void }) {
+export function TurnstileWidget({
+  onToken,
+  resetSignal,
+}: {
+  onToken: (token: string | null) => void;
+  /** Bump after a failed submit: a token is single-use, so the one just spent must
+   *  be replaced with a fresh solve. */
+  resetSignal?: number;
+}) {
   const ref = useRef<HTMLDivElement>(null);
+  const widgetIdRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     if (!SITE_KEY) return;
@@ -63,12 +73,25 @@ export function TurnstileWidget({ onToken }: { onToken: (token: string | null) =
         "expired-callback": () => onToken(null),
         "error-callback": () => onToken(null),
       });
+      widgetIdRef.current = widgetId;
     });
     return () => {
       cancelled = true;
       if (widgetId && window.turnstile) window.turnstile.remove(widgetId);
+      widgetIdRef.current = undefined;
     };
   }, [onToken]);
+
+  // audit DY Med 18, 2026-10-05: Cloudflare accepts a token once. A failed submit
+  // (wrong password, taken email, 429) spends it, so the retry re-sent a dead token
+  // and failed for a reason the user could not see. A separate effect, so the
+  // render/cleanup effect above never re-runs for a reset.
+  useEffect(() => {
+    const id = widgetIdRef.current;
+    if (!resetSignal || !id || !window.turnstile) return;
+    window.turnstile.reset(id);
+    onToken(null);
+  }, [resetSignal, onToken]);
 
   if (!SITE_KEY) return null;
   return <div ref={ref} className="fr" style={{ marginBottom: 4 }} />;

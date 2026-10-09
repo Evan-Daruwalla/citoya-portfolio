@@ -71,9 +71,9 @@ export default function AdminPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("pending");
-  // Both endpoints are public; the admin gate on this page is about not showing
-  // an operator surface to visitors, not about these two reads. Held (null key)
-  // until the admin check passes so a non-admin never fires them.
+  // /stats is public; the admin gate on this page is about not showing an operator
+  // surface to visitors, not about this read. Held (null key) until the admin check
+  // passes so a non-admin never fires it.
   // `error` is read, not just `data`: with `?? 0` alone a failed fetch and "zero
   // organizations on the platform" rendered identically. The fourth tile below
   // already hardcodes "—", which is the glyph this project uses for a failed
@@ -81,8 +81,10 @@ export default function AdminPage() {
   const { data: stats, error } = usePublicQuery(
     user?.is_admin ? "admin/stats" : null,
     async () => {
-      const [opps, board] = await Promise.all([api.listOpportunities({}), api.leaderboard()]);
-      return { opps: opps.length, orgs: new Set(opps.map((o) => o.org_id)).size, students: board.length };
+      // From /stats: counting the list endpoints capped these tiles at 60 listings
+      // and 25 students (audit DY Med 15, 2026-10-05).
+      const s = await api.stats();
+      return { opps: s.opportunities, orgs: s.organizations, students: s.students };
     },
   );
 

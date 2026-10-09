@@ -8,17 +8,7 @@ import { useState, type FormEvent } from "react";
 import { TurnstileWidget } from "@/components/turnstile-widget";
 import { V1Shell } from "@/components/v1/v1-shell";
 import { ApiError, useAuth } from "@/lib/auth-context";
-
-function ageFromDob(dob: string): number | null {
-  if (!dob) return null;
-  const d = new Date(`${dob}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return null;
-  const now = new Date();
-  let age = now.getFullYear() - d.getFullYear();
-  const m = now.getMonth() - d.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age -= 1;
-  return age;
-}
+import { ageFromDobUtc } from "@/lib/consent";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -31,11 +21,15 @@ export default function RegisterPage() {
   const [guardianName, setGuardianName] = useState("");
   const [guardianEmail, setGuardianEmail] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  // audit DY Med 18, 2026-10-05: bumped on a failed submit to reset the spent token.
+  const [turnstileReset, setTurnstileReset] = useState(0);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const age = ageFromDob(dob);
+  // Audit DY Low 39, 2026-10-07: the server's UTC age rule (lib/consent.ts), not a local-date
+  // copy, so a form filled in near midnight agrees with what the server will decide.
+  const age = dob && !Number.isNaN(Date.parse(dob)) ? ageFromDobUtc(dob) : null;
   const isMinor = role === "student" && age !== null && age < 18;
 
   async function onSubmit(e: FormEvent) {
@@ -56,6 +50,7 @@ export default function RegisterPage() {
       router.push("/welcome");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setTurnstileReset((n) => n + 1);
     } finally {
       setSubmitting(false);
     }
@@ -133,7 +128,7 @@ export default function RegisterPage() {
                   </div>
                 </div>
               )}
-              <TurnstileWidget onToken={setTurnstileToken} />
+              <TurnstileWidget onToken={setTurnstileToken} resetSignal={turnstileReset} />
               <div className="fr" style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 4 }}>
                 <input
                   id="accept-terms"

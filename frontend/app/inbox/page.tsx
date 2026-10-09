@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ReportConcern } from "@/components/report-concern";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { api } from "@/lib/api";
+import { ApiError, api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { consentGated } from "@/lib/consent";
 import { useAuthedQuery } from "@/lib/use-api";
@@ -23,16 +23,22 @@ export default function InboxPage() {
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [replyBody, setReplyBody] = useState("");
   const [sending, setSending] = useState(false);
+  // audit DY Med 21, 2026-10-05: a failed send used to reject unhandled, so the
+  // reply box just stopped sending with nothing on screen saying why.
+  const [replyError, setReplyError] = useState<string | null>(null);
 
   async function sendReply(id: string) {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token || !replyBody.trim()) return;
     setSending(true);
+    setReplyError(null);
     try {
       await api.replyMessage(id, replyBody.trim(), token);
       setReplyTo(null);
       setReplyBody("");
       void mutate();  // re-read the thread after a successful send
+    } catch (err) {
+      setReplyError(err instanceof ApiError ? err.message : "Couldn't send your reply. Try again.");
     } finally {
       setSending(false);
     }
@@ -96,8 +102,11 @@ export default function InboxPage() {
                     value={replyBody}
                     onChange={(e) => setReplyBody(e.target.value)}
                     placeholder="Write a reply…"
-                    className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm"
+                    className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs"
                   />
+                  {replyError && (
+                    <p className="text-sm text-destructive" role="alert">{replyError}</p>
+                  )}
                   <div className="flex gap-2">
                     <Button size="sm" disabled={sending || !replyBody.trim()} onClick={() => sendReply(m.id)}>
                       {sending ? "Sending…" : "Send"}

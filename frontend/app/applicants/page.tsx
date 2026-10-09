@@ -3,7 +3,7 @@
 import { Archive, BadgeCheck, CalendarDays, ClipboardList, Clock, Download, Globe, Landmark, LogOut, MapPin, MessageCircle, RefreshCw, Shuffle, Star, TrendingUp, TriangleAlert, Users, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 
 import { CategoryIcon, getCategoryMeta } from "@/components/v1/category-icon";
 import { OrgReviewBanner } from "@/components/org-review-banner";
@@ -93,12 +93,17 @@ export default function OrgDashboardPage() {
   // Profile form state.
   const [emailNotifs, setEmailNotifs] = useState(true);
   const [savedProfile, setSavedProfile] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
   // Account section (export + delete).
   const [delConfirm, setDelConfirm] = useState("");
   const [delPassword, setDelPassword] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Deny is two steps here too, as on /verify-hours (2026-10-08, the named gap from audit DY Low 33).
+  const [denyingId, setDenyingId] = useState<string | null>(null);
+  const [denyNote, setDenyNote] = useState("");
 
   // Re-read all three. Every caller is a WRITE that can move more than one of them:
   // approving an application changes the roster AND the listing's spots, and
@@ -151,13 +156,15 @@ export default function OrgDashboardPage() {
     }
   }
 
-  async function verify(id: string, action: "approve" | "deny") {
+  async function verify(id: string, action: "approve" | "deny", note?: string) {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return;
     setBusyId(id);
     setError(null);
     try {
-      await api.verifyHours(id, action, token);
+      await api.verifyHours(id, action, token, note);
+      setDenyingId(null);
+      setDenyNote("");
       refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong.");
@@ -217,12 +224,15 @@ export default function OrgDashboardPage() {
   async function saveProfile() {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return;
+    setProfileError(null);
     try {
       await api.updateMe(token, { email_notifications: emailNotifs });
       setSavedProfile(true);
       setTimeout(() => setSavedProfile(false), 2500);
-    } catch {
-      /* non-fatal */
+    } catch (err) {
+      // audit DY Low 42, 2026-10-07: this was swallowed, so a failed save looked like
+      // nothing had been clicked and the org kept believing the preference was stored.
+      setProfileError(err instanceof ApiError ? err.message : "Could not save your changes.");
     }
   }
 
@@ -617,7 +627,8 @@ export default function OrgDashboardPage() {
                   <thead><tr><th>Student</th><th>Opportunity</th><th>Date</th><th>Hours</th><th>Status</th><th></th></tr></thead>
                   <tbody>
                     {hours.map((h) => (
-                      <tr key={h.id}>
+                      <Fragment key={h.id}>
+                      <tr>
                         <td>
                           <StudentCell name={h.student_name} email={h.student_email} inactive={h.student_inactive} />
                         </td>
@@ -628,10 +639,30 @@ export default function OrgDashboardPage() {
                         <td>{(h.status === "pending" || h.status === "appealed") && (
                           <div style={{ display: "flex", gap: 6 }}>
                             <button className="btn-approve" disabled={busyId === h.id} onClick={() => verify(h.id, "approve")}>✓ Verify</button>
-                            <button className="btn-reject" disabled={busyId === h.id} onClick={() => verify(h.id, "deny")}>✕ Deny</button>
+                            <button className="btn-reject" disabled={busyId === h.id || denyingId === h.id} onClick={() => { setDenyingId(h.id); setDenyNote(""); }}>✕ Deny</button>
                           </div>
                         )}</td>
                       </tr>
+                      {denyingId === h.id && (
+                        <tr>
+                          <td colSpan={6}>
+                            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                              <input
+                                className="fc"
+                                aria-label="Reason for denying (optional)"
+                                placeholder="Reason (optional, the student sees it)"
+                                maxLength={500}
+                                value={denyNote}
+                                onChange={(e) => setDenyNote(e.target.value)}
+                                style={{ flex: 1, minWidth: 200 }}
+                              />
+                              <button className="btn-reject" disabled={busyId === h.id} onClick={() => verify(h.id, "deny", denyNote.trim() || undefined)}>Confirm deny</button>
+                              <button className="btn-s" disabled={busyId === h.id} onClick={() => setDenyingId(null)}>Cancel</button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>
@@ -676,6 +707,7 @@ export default function OrgDashboardPage() {
                 </div>
                 <button className="fsubmit" onClick={saveProfile}>Save Changes</button>
                 {savedProfile && <span style={{ marginLeft: 12, fontSize: ".82rem", color: "var(--green)" }}>Saved ✓</span>}
+                {profileError && <div className="ferr" style={{ display: "block", marginTop: 10 }}>{profileError}</div>}
                 <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--border)", display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <Link className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} href="/billing">Manage Billing</Link>
                   <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={downloadExport}><Download size={15} strokeWidth={1.75} aria-hidden /> Download my data (JSON)</button>
@@ -689,6 +721,14 @@ export default function OrgDashboardPage() {
                     You must deactivate all active listings first (the Deactivate button on each card in My Listings and Listing History).{" "}
                     <strong>Log in within 48 hours to restore your account.</strong>
                   </p>
+                  {user.plan === "pro" && (
+                    <p>
+                      <strong>Your organization is on the Pro plan.</strong> If no one signs in with this
+                      account&rsquo;s main email ({user.email}) and chooses Restore within 48 hours, the deletion
+                      becomes final: your Pro subscription is cancelled and the rest of your current Pro month is
+                      lost. It is not refunded.
+                    </p>
+                  )}
                   <div className="fr">
                     <label htmlFor="applicants-delete-confirm">Type DELETE to confirm</label>
                     <input id="applicants-delete-confirm" className="fc" value={delConfirm} onChange={(e) => setDelConfirm(e.target.value)} placeholder="DELETE" />

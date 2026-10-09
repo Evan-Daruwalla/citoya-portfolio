@@ -1,14 +1,14 @@
 # features — citoya-v2
 
-Last updated 2026-09-27.
+Last updated 2026-10-08 (audit DY Low 50: the header and counts below had stood since 2026-09-27).
 
 ## Milestone status (PRD M1–M11)
 - **Done:** M1–M9 (see below), **M10 COMPLETE** (`docker compose up --build` verified by Evan
   2026-07-12 — full stack boots, migrations applied on real Postgres), **M12 v1 visual parity**
   (2026-07-12), and two off-roadmap Evan-directed 2026-07-13 blocks: **v1 EXACT-COPY** (all 13
   screens rebuilt in the scoped `.v1` architecture — see architecture.md/conventions.md) and a
-  **public-portfolio slice**. **704 collected (699 passed + 5 skipped on SQLite; 704 passed on Postgres), migrations 0001-0040 (2026-09-27 22:12-22:20 CDT, record CX;
-  supersedes 697 of ~20:43 (CQ), 691 of ~19:16 (CP), 684 of ~18:20 (CO), 682 of ~17:44 (CN), 673 of ~17:32 (CM), 665 of ~17:17 (CL), 646 of ~16:54 (CJ), 633 of 2026-09-26 ~23:23 (CG), 589 of ~01:14 (BV), 588 of ~00:40 (BU), 582 of 2026-09-25 ~22:06 (BS), 578 of 2026-09-24 ~23:49 (BR), 542 of ~22:43 (BQ), 533 of ~21:09 (BJ), 516 of 2026-09-23 ~22:20 CDT, 513 of 21:08, 512 of ~20:58, 509 of ~20:45, 508 of ~16:20, 507 of ~15:48 the same day and 454/0001–0029 of 2026-09-20, which superseded the 327/0001–0024 figure of 2026-08-19, which superseded 189/0001–0021). M11 launch = BLOCKED-ON-EVAN (host, domain/DNS, prod
+  **public-portfolio slice**. **1004 collected (999 passed + 5 skipped on SQLite; 1004 passed on Postgres), migrations 0001-0041 (2026-10-08, record EH; the full count history is in testing.md;
+  supersedes 704 of 2026-09-27 22:12-22:20 CDT (CX), 697 of ~20:43 (CQ), 691 of ~19:16 (CP), 684 of ~18:20 (CO), 682 of ~17:44 (CN), 673 of ~17:32 (CM), 665 of ~17:17 (CL), 646 of ~16:54 (CJ), 633 of 2026-09-26 ~23:23 (CG), 589 of ~01:14 (BV), 588 of ~00:40 (BU), 582 of 2026-09-25 ~22:06 (BS), 578 of 2026-09-24 ~23:49 (BR), 542 of ~22:43 (BQ), 533 of ~21:09 (BJ), 516 of 2026-09-23 ~22:20 CDT, 513 of 21:08, 512 of ~20:58, 509 of ~20:45, 508 of ~16:20, 507 of ~15:48 the same day and 454/0001–0029 of 2026-09-20, which superseded the 327/0001–0024 figure of 2026-08-19, which superseded 189/0001–0021). M11 launch = BLOCKED-ON-EVAN (host, domain/DNS, prod
   secrets, Resend key, Turnstile key, SUPPORT_EMAIL, legal).**
 - **M13 / M14 (added 2026-09-02).** This section stopped at M9/M10/M12 while INDEX.md
   routed every reader here for milestone status — so a session following INDEX's own
@@ -102,7 +102,8 @@ Last updated 2026-09-27.
   terms and the dashboard upgrade copy used to sell it as Pro. It is built in the browser from
   data the org already loads, so a plan gate would have enforced nothing.
 - Hardening (M9): (M9.1) `RateLimitMiddleware` (`app/core/rate_limit.py`) — 60s window per
-  (IP, bucket): WRITES under `/auth/` 30/min + other writes 120/min; reads free (`GET /auth/me` too, since 2026-09-22 — T1); 429 + Retry-After;
+  (IP, bucket): WRITES under `/auth/` 30/min + other writes 120/min; reads free (`GET /auth/me` too, since 2026-09-22 — T1) except the three token-checking
+  consent GETs, which spend the auth bucket since 2026-09-28 (DM L3; corrected 2026-09-30); 429 + Retry-After;
   config `RATE_LIMIT_*`; added before CORS; `reset()` called per test in conftest.
   **SHARED STORE since 2026-09-05** (migration 0027, `rate_limit_hits`): fixed windows with a
   weighted look-back, so instances share one view instead of each keeping its own count and
@@ -133,8 +134,9 @@ Last updated 2026-09-27.
   `app/services/notifications.py::create_notification`, which adds the in-app row AND fires
   `send_email` unless `User.email_notifications` is false (opt-out via `PATCH /auth/me`; default
   true, migration 0015). Every email carries `Reply-To: SUPPORT_EMAIL` when set (2026-09-22 —
-  the sender is a noreply subdomain that receives nothing). Email is fire-and-forget, sent before the caller's commit (accepted
-  at-most-once edge, no outbox). `GET /notifications` is paginated (`limit`/`offset`).
+  the sender is a noreply subdomain that receives nothing). ~~Email is fire-and-forget, sent before the caller's commit (accepted
+  at-most-once edge, no outbox).~~ (2026-10-07, audit DY Low 27, record EF:) email is queued in the
+  session and sent after the outermost commit; a rollback drops it; still at-most-once, no outbox. `GET /notifications` is paginated (`limit`/`offset`).
 - Messaging (M7, done 2026-07-09): ONE `messages` table, two shapes via nullable `recipient_id` —
   NULL = shared per-opportunity thread (`GET/POST /opportunities/{id}/messages`); set =
   directed. **The thread is org-WRITE-only since 2026-09-22** (Evan): the owning org posts,

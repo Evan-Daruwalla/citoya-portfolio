@@ -24,8 +24,15 @@ export default function ConsentDecisionPage() {
 
   useEffect(() => {
     const fromHash = window.location.hash.replace(/^#/, "");
-    tokenRef.current = fromHash;
-    (fromHash ? api.consentContext(fromHash) : Promise.reject(new Error("missing fragment")))
+    // audit DY Low 37, 2026-10-07: the token is single-use, so once it is held in the ref
+    // the fragment comes out of the address bar and history. The guard keeps a second
+    // run of this effect (StrictMode in development) from reading the emptied hash.
+    if (fromHash) {
+      tokenRef.current = fromHash;
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+    const token = tokenRef.current;
+    (token ? api.consentContext(token) : Promise.reject(new Error("missing fragment")))
       .then(setCtx)
       .catch((err) =>
         setError(

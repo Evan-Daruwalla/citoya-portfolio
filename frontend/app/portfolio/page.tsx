@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { V1Shell } from "@/components/v1/v1-shell";
-import { api } from "@/lib/api";
+import { ApiError, api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { useAuthedQuery } from "@/lib/use-api";
 import type { HoursWithOpportunity, MyAwards } from "@/lib/types";
@@ -35,15 +35,19 @@ export default function PortfolioPage() {
   const [publicOverride, setPublicOverride] = useState<boolean | null>(null);
   const isPublic = publicOverride ?? user?.portfolio_public ?? false;
   const [copied, setCopied] = useState(false);
+  const [toggleError, setToggleError] = useState<string | null>(null);
 
   async function togglepublic(next: boolean) {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return;
     setPublicOverride(next); // optimistic
+    setToggleError(null);
     try {
       await api.updateMe(token, { portfolio_public: next });
-    } catch {
+    } catch (err) {
       setPublicOverride(!next); // revert on failure
+      // audit DY Low 42, 2026-10-07: the revert alone left no sign the click had failed.
+      setToggleError(err instanceof ApiError ? err.message : "Could not update your privacy setting.");
     }
   }
 
@@ -165,6 +169,7 @@ export default function PortfolioPage() {
               organizations, and awards (good for college and scholarship applications). Off by default.
             </span>
           </label>
+          {toggleError && <div className="ferr" style={{ display: "block", marginTop: 10 }}>{toggleError}</div>}
         </div>
       </div>
     </V1Shell>

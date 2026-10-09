@@ -113,7 +113,7 @@ export default function TermsPage() {
           <p style={{ textTransform: "uppercase" }}>TO THE MAXIMUM EXTENT PERMITTED BY LAW, CITOYA AND ITS OPERATORS WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR FOR ANY LOSS OF PROFITS, DATA, GOODWILL, OR OPPORTUNITIES, ARISING OUT OF OR RELATED TO YOUR USE OF THE SERVICE. TO THE MAXIMUM EXTENT PERMITTED BY LAW, CITOYA&rsquo;S TOTAL AGGREGATE LIABILITY FOR ALL CLAIMS RELATING TO THE SERVICE WILL NOT EXCEED THE GREATER OF (A) THE TOTAL AMOUNT YOU PAID TO CITOYA IN THE TWELVE MONTHS BEFORE THE EVENT GIVING RISE TO THE CLAIM, OR (B) ONE HUNDRED U.S. DOLLARS. BECAUSE THE SERVICE IS FREE FOR STUDENTS, A STUDENT&rsquo;S FEES-PAID CAP IS ZERO. SOME JURISDICTIONS DO NOT ALLOW CERTAIN LIMITATIONS, SO SOME OF THE ABOVE MAY NOT APPLY TO YOU.</p>
 
           <h3>Suspension &amp; termination</h3>
-          <p>We may suspend or remove accounts that violate these Terms or put others at risk. You can delete your account at any time from the <strong>Account</strong> section of your dashboard; deletion is handled as described in the <Link href="/privacy">Privacy Policy</Link> (the account is deactivated at once and its personal data removed 48 hours later unless you log back in first, while an organization&rsquo;s record of already-verified hours is retained in anonymized form). Organizations must deactivate their active listings before deleting their account.</p>
+          <p>We may suspend or remove accounts that violate these Terms or put others at risk. You can delete your account at any time from the <strong>Account</strong> section of your dashboard; deletion is handled as described in the <Link href="/privacy">Privacy Policy</Link> (the account is deactivated at once and its personal data removed 48 hours later unless you log back in first, while an organization&rsquo;s record of already-verified hours is retained in anonymized form). Organizations must deactivate their active listings before deleting their account. If an organization on the Pro plan deletes its account, the Pro subscription is cancelled when the deletion becomes final (48 hours later, unless the account is restored first), and the rest of that billing period is not refunded.</p>
 
           <h3>Changes to these Terms</h3>
           <p>We may update these Terms. Material changes will be reflected by the date at the top, and (once the service is live) meaningful changes will be communicated to account holders. Continued use after an update means you accept the updated Terms.</p>
@@ -125,7 +125,7 @@ export default function TermsPage() {
             <p style={openClause} role="note">
               <strong>Not yet settled.</strong> The governing state and the legal entity that operates
               Citoya are still with a legal reviewer, so this clause is deliberately blank rather
-              than filled with a guess: [GOVERNING STATE — Evan] and [LEGAL ENTITY NAME — Evan]. Until
+              than filled with a guess: [GOVERNING STATE] and [LEGAL ENTITY NAME]. Until
               they are answered these Terms remain a draft and are not in effect.
             </p>
           )}

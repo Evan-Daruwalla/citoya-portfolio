@@ -1,4 +1,4 @@
-# Codebase memory — citoya-v2 (INDEX)
+# Project memory - citoya-v2 (INDEX)
 
 > **Size: cap is ~75 lines** — raised from ~25 on 2026-09-03 (Evan), because 16 bins need 16
 > routing lines before a single invariant is written. Invariants stay one line each, reasoning
@@ -25,10 +25,11 @@ Standards bins (the codebase's committed choices, one home each):
 *(Per-bin dates were removed 2026-08-19: they disagreed with 5 of 11 bins' own
 headers, in both directions. The header inside each bin is the single copy.)*
 
+
 Cross-bin invariants — ONE LINE each, deliberately (compressed 2026-09-03). Each rule's
 reasoning lives in the bin named after it; this list is the rule, not the argument for it.
 - **Students are free forever** — no plan/billing logic may gate a student feature. → conventions
-- **Never expose in a read schema**: check-in codes, guardian/reset/consent tokens, full last names. → security
+- **Never expose in a read schema**: check-in codes, guardian/reset/consent tokens, full last names on public surfaces (an org sees its applicants' full names; qualified 2026-09-29). → security
 - **Age is recomputed live from `dob`** — never store or derive an "is minor" flag. → consent
 - **Public exposure is opt-in + minor-minimized**, and an unknown id 404s uniformly. → security, consent
 - **A listing is public only if its ORG is approved** — `is_approved` is per-ORG and read only for orgs. → security
@@ -43,4 +44,4 @@ reasoning lives in the bin named after it; this list is the rule, not the argume
 - **A pushed event invalidates SWR KEYS, not components** — one `publish` + one `AFFECTED_KEYS` entry. → conventions
 - **Gate on the ENGINE, never on `settings.DATABASE_URL`** — they differ under test. → gotchas
 
-> *Public mirror: this index is filtered. `DIRECTORY.md`, `audit-log.md`, `browser-verification.md`, `consent.md`, `data.md`, `dependencies.md`, `disclosure.md`, `performance.md`, `security.md`, `testing.md`, `tooling.md`, `ui.md` are not published — the security bin deliberately so, the rest simply out of scope for the mirror. The private repo carries all of them. Prose CROSS-REFERENCES to those files still appear throughout the bins below: the published bins are byte-identical copies, not rewrites, and silently editing their text to hide the gap would make the public copy disagree with the private one — a worse failure than a dead pointer.*
+> *Public mirror: this index is filtered. `DIRECTORY.md`, `audit-log.md`, `browser-verification.md`, `budget.md`, `compliance.md`, `consent.md`, `data.md`, `decisions.md`, `dependencies.md`, `disclosure.md`, `experiments.md`, `glossary.md`, `hardware.md`, `important.md`, `operations.md`, `people.md`, `performance.md`, `security.md`, `services.md`, `testing.md`, `timeline.md`, `tooling.md`, `ui.md`, `writing.md` are not published — the security bin deliberately so, the rest simply out of scope for the mirror. The private repo carries all of them. Prose CROSS-REFERENCES to those files still appear throughout the bins below: the published bins are byte-identical copies, not rewrites, and silently editing their text to hide the gap would make the public copy disagree with the private one — a worse failure than a dead pointer.*

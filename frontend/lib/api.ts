@@ -6,6 +6,7 @@
  * roughly the same order as the route modules.
  */
 import { humanizeDetail } from "@/lib/humanize-detail";
+import { collectPages } from "@/lib/paging";
 import type {
   AdminOrg,
   Application,
@@ -26,8 +27,10 @@ import type {
   OpportunityCreateInput,
   OpportunityTemplate,
   OrgReviews,
+  PublicOrg,
   PersonalEventInput,
   PublicPortfolio,
+  PublicStats,
   Review,
   OrgAnalytics,
   OrgReviewStatus,
@@ -44,6 +47,11 @@ export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000
 // re-exports it, so every existing `import { TOKEN_KEY } from "@/lib/auth-context"`
 // still resolves.
 export const TOKEN_KEY = "citoya_token";
+
+// Dispatched on `window` when the server rejects the stored token (401), so auth-context
+// can drop its in-memory user too: clearing localStorage alone left the UI signed in
+// until a reload (audit DY Med 17, 2026-10-05).
+export const SESSION_EXPIRED_EVENT = "citoya:session-expired";
 
 export class ApiError extends Error {
   status: number;
@@ -77,6 +85,7 @@ async function request<T>(
     // state. Tokenless 401s (e.g. a failed login) attach no token and clear nothing.
     if (res.status === 401 && token && typeof window !== "undefined") {
       localStorage.removeItem(TOKEN_KEY);
+      window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
     }
     let detail = res.statusText;
     try {
@@ -92,6 +101,8 @@ async function request<T>(
   return res.json() as Promise<T>;
 }
 
+// audit DY Low 35, 2026-10-07: every dynamic path segment below goes through
+// encodeURIComponent, so a value holding "/", "?" or "#" cannot rewrite the path.
 export const api = {
   // ── Auth & account ──
   register: (input: {
@@ -167,15 +178,39 @@ export const api = {
       headers: { "X-Guardian-Token": linkToken },
       body: JSON.stringify({ action: "revoke" }),
     }),
+  // Export and delete need a single-use code emailed to the guardian (Appendix R H4); the
+  // code rides in its own header, never the URL, like the token (K4, 2026-09-27).
+  guardianStepUp: (linkToken: string, action: "export" | "delete") =>
+    request<{ message: string }>(`/consent/manage/step-up?action=${action}`, {
+      method: "POST",
+      headers: { "X-Guardian-Token": linkToken },
+    }),
+  guardianExport: (linkToken: string, code: string) =>
+    request<Record<string, unknown>>(`/consent/manage/export`, {
+      headers: { "X-Guardian-Token": linkToken, "X-Guardian-Confirm": code },
+    }),
+  guardianDelete: (linkToken: string, code: string) =>
+    request<{ message: string }>(`/consent/manage/delete`, {
+      method: "POST",
+      headers: { "X-Guardian-Token": linkToken, "X-Guardian-Confirm": code },
+    }),
 
   // ── Opportunities & applications ──
-  listOpportunities: (params: { category?: string; query?: string } = {}) => {
-    const qs = new URLSearchParams();
-    if (params.category) qs.set("category", params.category);
-    if (params.query) qs.set("query", params.query);
-    const suffix = qs.toString() ? `?${qs.toString()}` : "";
-    return request<Opportunity[]>(`/opportunities${suffix}`);
-  },
+  // Every discoverable listing. The list endpoint caps a call at 200 rows (60 by
+  // default), so one call silently drops the rest (audit DY Med 15, 2026-10-05).
+  listAllOpportunities: (params: { category?: string; query?: string; org_id?: string } = {}) =>
+    collectPages((limit, offset) => {
+      const qs = new URLSearchParams();
+      if (params.category) qs.set("category", params.category);
+      if (params.query) qs.set("query", params.query);
+      if (params.org_id) qs.set("org_id", params.org_id);
+      qs.set("limit", String(limit));
+      qs.set("offset", String(offset));
+      return request<Opportunity[]>(`/opportunities?${qs.toString()}`);
+    }),
+
+  // Public counts for the home tile, the leaderboard band and the admin tiles.
+  stats: () => request<PublicStats>("/stats"),
 
   // The token is OPTIONAL and the route stays public — a shared listing link must
   // render for a signed-out visitor. But the backend BRANCHES on the caller, and
@@ -185,7 +220,7 @@ export const api = {
   // exception would have shipped broken. `test_org_analytics.py` passed throughout
   // because TestClient sends a header the app never sent.
   getOpportunity: (id: string, token?: string) =>
-    request<Opportunity>(`/opportunities/${id}`, token ? { token } : {}),
+    request<Opportunity>(`/opportunities/${encodeURIComponent(id)}`, token ? { token } : {}),
 
   // Org's OWN listings incl. inactive/expired (the public list hides those).
   myOpportunities: (token: string) => request<Opportunity[]>("/opportunities/mine", { token }),
@@ -198,17 +233,17 @@ export const api = {
     token: string,
     body?: { subscription_type: "all_dates" | "single_date"; single_date?: string }
   ) =>
-    request<Application>(`/opportunities/${opportunityId}/apply`, {
+    request<Application>(`/opportunities/${encodeURIComponent(opportunityId)}/apply`, {
       method: "POST",
       token,
       ...(body ? { body: JSON.stringify(body) } : {}),
     }),
 
   withdraw: (opportunityId: string, token: string) =>
-    request<void>(`/opportunities/${opportunityId}/apply`, { method: "DELETE", token }),
+    request<void>(`/opportunities/${encodeURIComponent(opportunityId)}/apply`, { method: "DELETE", token }),
 
   excludeDate: (opportunityId: string, date: string, action: "exclude" | "include", token: string) =>
-    request<Application>(`/opportunities/${opportunityId}/exclude-date`, {
+    request<Application>(`/opportunities/${encodeURIComponent(opportunityId)}/exclude-date`, {
       method: "PATCH",
       body: JSON.stringify({ date, action }),
       token,
@@ -220,7 +255,7 @@ export const api = {
   // identically — they share one SWR key, and a key must mean one fetcher.
   dateSpots: (opportunityId: string, token?: string) =>
     request<Record<string, number>>(
-      `/opportunities/${opportunityId}/date-spots`,
+      `/opportunities/${encodeURIComponent(opportunityId)}/date-spots`,
       token ? { token } : {},
     ),
 
@@ -228,10 +263,12 @@ export const api = {
     request<ApplicationWithOpportunity[]>("/applications/my", { token }),
 
   orgApplications: (token: string) =>
-    request<ApplicationWithOpportunity[]>("/applications/org", { token }),
+    collectPages((limit, offset) =>
+      request<ApplicationWithOpportunity[]>(`/applications/org?limit=${limit}&offset=${offset}`, { token }),
+    ),
 
   decideApplication: (applicationId: string, action: "approve" | "reject", token: string) =>
-    request<ApplicationWithOpportunity>(`/applications/${applicationId}`, {
+    request<ApplicationWithOpportunity>(`/applications/${encodeURIComponent(applicationId)}`, {
       method: "PATCH",
       body: JSON.stringify({ action }),
       token,
@@ -240,10 +277,13 @@ export const api = {
   // ── Hours & check-in ──
   autoLogHours: (token: string) => request<{ created: number }>("/hours/auto-log", { method: "POST", token }),
 
-  listHours: (token: string) => request<HoursWithOpportunity[]>("/hours", { token }),
+  listHours: (token: string) =>
+    collectPages((limit, offset) =>
+      request<HoursWithOpportunity[]>(`/hours?limit=${limit}&offset=${offset}`, { token }),
+    ),
 
   verifyHours: (hoursId: string, action: "approve" | "deny", token: string, note?: string) =>
-    request<HoursWithOpportunity>(`/hours/${hoursId}/verify`, {
+    request<HoursWithOpportunity>(`/hours/${encodeURIComponent(hoursId)}/verify`, {
       method: "PATCH",
       body: JSON.stringify({ action, note }),
       token,
@@ -259,15 +299,12 @@ export const api = {
   ) => request<HoursWithOpportunity>("/hours/offsite", { method: "POST", body: JSON.stringify(input), token }),
 
   // Every row, for the hours PDF (M16.2). `GET /hours` returns 100 by default and
-  // at most 200 a page, so one call would silently cut a long history short.
-  listAllHours: async (token: string) => {
-    const all: HoursWithOpportunity[] = [];
-    for (let offset = 0; ; offset += 200) {
-      const page = await request<HoursWithOpportunity[]>(`/hours?limit=200&offset=${offset}`, { token });
-      all.push(...page);
-      if (page.length < 200) return all;
-    }
-  },
+  // at most 200 a page, so one call would silently cut a long history short; this
+  // pages through `collectPages`.
+  listAllHours: (token: string) =>
+    collectPages((limit, offset) =>
+      request<HoursWithOpportunity[]>(`/hours?limit=${limit}&offset=${offset}`, { token }),
+    ),
 
   // ── Calendar (M16.4) ──
   // `end` is exclusive; the backend allows a window of up to 62 days.
@@ -276,7 +313,7 @@ export const api = {
   createCalendarEvent: (input: PersonalEventInput, token: string) =>
     request<unknown>("/calendar/events", { method: "POST", body: JSON.stringify(input), token }),
   deleteCalendarEvent: (eventId: string, token: string) =>
-    request<void>(`/calendar/events/${eventId}`, { method: "DELETE", token }),
+    request<void>(`/calendar/events/${encodeURIComponent(eventId)}`, { method: "DELETE", token }),
 
   // The calendar feed (M16.5): the link is shown once, so these return the raw token
   // only from create. The URLs point at the API itself, which serves the .ics.
@@ -284,7 +321,7 @@ export const api = {
   createCalendarFeed: (token: string) => request<{ token: string }>("/calendar/feed", { method: "POST", token }),
   deleteCalendarFeed: (token: string) => request<void>("/calendar/feed", { method: "DELETE", token }),
   calendarFeedUrls: (feedToken: string) => {
-    const https = `${API_URL}/calendar/feed/${feedToken}.ics`;
+    const https = `${API_URL}/calendar/feed/${encodeURIComponent(feedToken)}.ics`;
     const webcal = https.replace(/^https?:\/\//, "webcal://");
     return { https, webcal, google: `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcal)}` };
   },
@@ -295,30 +332,30 @@ export const api = {
     input: Pick<Goal, "title" | "target_hours" | "period" | "every" | "unit"> & { start_date?: string },
     token: string,
   ) => request<Goal>("/goals", { method: "POST", body: JSON.stringify(input), token }),
-  deleteGoal: (goalId: string, token: string) => request<void>(`/goals/${goalId}`, { method: "DELETE", token }),
+  deleteGoal: (goalId: string, token: string) => request<void>(`/goals/${encodeURIComponent(goalId)}`, { method: "DELETE", token }),
   reorderGoals: (ids: string[], token: string) =>
     request<Goal[]>("/goals/order", { method: "PUT", body: JSON.stringify({ ids }), token }),
 
   // Off-site entries only; the backend refuses a listing-backed row (403).
   deleteHours: (hoursId: string, token: string) =>
-    request<void>(`/hours/${hoursId}`, { method: "DELETE", token }),
+    request<void>(`/hours/${encodeURIComponent(hoursId)}`, { method: "DELETE", token }),
 
   appealHours: (hoursId: string, note: string, token: string) =>
-    request<HoursWithOpportunity>(`/hours/${hoursId}/appeal`, {
+    request<HoursWithOpportunity>(`/hours/${encodeURIComponent(hoursId)}/appeal`, {
       method: "POST",
       body: JSON.stringify({ note }),
       token,
     }),
 
   createCheckinCode: (opportunityId: string, date: string, token: string) =>
-    request<{ date: string; code: string }>(`/opportunities/${opportunityId}/checkin-codes`, {
+    request<{ date: string; code: string }>(`/opportunities/${encodeURIComponent(opportunityId)}/checkin-codes`, {
       method: "POST",
       body: JSON.stringify({ date }),
       token,
     }),
 
   redeemCheckin: (opportunityId: string, code: string, token: string) =>
-    request<Hours>(`/opportunities/${opportunityId}/checkin`, {
+    request<Hours>(`/opportunities/${encodeURIComponent(opportunityId)}/checkin`, {
       method: "POST",
       body: JSON.stringify({ code }),
       token,
@@ -331,24 +368,30 @@ export const api = {
   listSaved: (token: string) => request<Opportunity[]>("/saved", { token }),
   listSavedIds: (token: string) => request<string[]>("/saved/ids", { token }),
   save: (opportunityId: string, token: string) =>
-    request<void>(`/saved/${opportunityId}`, { method: "PUT", token }),
+    request<void>(`/saved/${encodeURIComponent(opportunityId)}`, { method: "PUT", token }),
   unsave: (opportunityId: string, token: string) =>
-    request<void>(`/saved/${opportunityId}`, { method: "DELETE", token }),
+    request<void>(`/saved/${encodeURIComponent(opportunityId)}`, { method: "DELETE", token }),
 
   // ── Community (leaderboard + public portfolio) ──
   leaderboard: () => request<LeaderboardEntry[]>("/leaderboard"),
 
   // Public verified-service transcript (only for students who opted in; else 404).
-  publicPortfolio: (userId: string) => request<PublicPortfolio>(`/portfolio/${userId}`),
+  publicPortfolio: (userId: string) => request<PublicPortfolio>(`/portfolio/${encodeURIComponent(userId)}`),
+
+  // An organization's public page (PRD M17.1, 2026-10-06). The token is optional for
+  // the reason reviews take one: the route is public, but the org itself and an admin
+  // can see an unapproved page that everyone else gets a 404 for.
+  publicOrg: (orgId: string, token?: string) =>
+    request<PublicOrg>(`/orgs/${encodeURIComponent(orgId)}`, token ? { token } : {}),
 
   // ── Reviews ──
   // The token is optional: the listing is public, and with one it marks the caller's own review.
   orgReviews: (orgId: string, token?: string) =>
-    request<OrgReviews>(`/orgs/${orgId}/reviews`, { token }),
+    request<OrgReviews>(`/orgs/${encodeURIComponent(orgId)}/reviews`, { token }),
   deleteReview: (orgId: string, reviewId: string, token: string) =>
-    request<void>(`/orgs/${orgId}/reviews/${reviewId}`, { method: "DELETE", token }),
+    request<void>(`/orgs/${encodeURIComponent(orgId)}/reviews/${encodeURIComponent(reviewId)}`, { method: "DELETE", token }),
   createReview: (orgId: string, input: { rating: number; text: string }, token: string) =>
-    request<Review>(`/orgs/${orgId}/reviews`, { method: "POST", body: JSON.stringify(input), token }),
+    request<Review>(`/orgs/${encodeURIComponent(orgId)}/reviews`, { method: "POST", body: JSON.stringify(input), token }),
 
   // ── Notifications ──
   notifications: (token: string) => request<Notification[]>("/notifications", { token }),
@@ -359,22 +402,22 @@ export const api = {
   streamTicket: (token: string) =>
     request<{ ticket: string; expires_in: number }>("/events/ticket", { method: "POST", token }),
   markNotificationRead: (id: string, token: string) =>
-    request<Notification>(`/notifications/${id}/read`, { method: "PATCH", token }),
+    request<Notification>(`/notifications/${encodeURIComponent(id)}/read`, { method: "PATCH", token }),
   markAllNotificationsRead: (token: string) =>
     request<{ unread: number }>("/notifications/read-all", { method: "POST", token }),
 
   // ── Messaging (per-opportunity threads) ──
   messages: (opportunityId: string, token: string) =>
-    request<Message[]>(`/opportunities/${opportunityId}/messages`, { token }),
+    request<Message[]>(`/opportunities/${encodeURIComponent(opportunityId)}/messages`, { token }),
   postMessage: (opportunityId: string, body: string, token: string) =>
-    request<Message>(`/opportunities/${opportunityId}/messages`, {
+    request<Message>(`/opportunities/${encodeURIComponent(opportunityId)}/messages`, {
       method: "POST",
       body: JSON.stringify({ body }),
       token,
     }),
   // An applicant's private message to the org (2026-09-22) — the thread is org-only.
   messageOrg: (opportunityId: string, body: string, token: string) =>
-    request<Message>(`/opportunities/${opportunityId}/messages/to-org`, {
+    request<Message>(`/opportunities/${encodeURIComponent(opportunityId)}/messages/to-org`, {
       method: "POST",
       body: JSON.stringify({ body }),
       token,
@@ -383,14 +426,14 @@ export const api = {
   // ── Directed messaging (M7): inbox, reply, org→applicant broadcast ──
   inbox: (token: string) => request<Message[]>("/messages", { token }),
   replyMessage: (id: string, body: string, token: string) =>
-    request<Message>(`/messages/${id}/reply`, { method: "POST", body: JSON.stringify({ body }), token }),
+    request<Message>(`/messages/${encodeURIComponent(id)}/reply`, { method: "POST", body: JSON.stringify({ body }), token }),
   broadcast: (
     opportunityId: string,
     body: string,
     audience: "all" | "approved" | "pending",
     token: string
   ) =>
-    request<{ sent: number }>(`/opportunities/${opportunityId}/messages/broadcast`, {
+    request<{ sent: number }>(`/opportunities/${encodeURIComponent(opportunityId)}/messages/broadcast`, {
       method: "POST",
       body: JSON.stringify({ body, audience }),
       token,
@@ -409,13 +452,13 @@ export const api = {
   createCheckout: (token: string) =>
     request<{ url: string }>("/billing/checkout", { method: "POST", token }),
   setFeatured: (opportunityId: string, featured: boolean, token: string) =>
-    request<Opportunity>(`/opportunities/${opportunityId}/featured`, {
+    request<Opportunity>(`/opportunities/${encodeURIComponent(opportunityId)}/featured`, {
       method: "PATCH",
       body: JSON.stringify({ featured }),
       token,
     }),
   setActive: (opportunityId: string, active: boolean, token: string) =>
-    request<Opportunity>(`/opportunities/${opportunityId}/active`, {
+    request<Opportunity>(`/opportunities/${encodeURIComponent(opportunityId)}/active`, {
       method: "PATCH",
       body: JSON.stringify({ active }),
       token,
@@ -437,8 +480,8 @@ export const api = {
   adminOrgs: (status: OrgReviewStatus, token: string) =>
     request<AdminOrg[]>(`/admin/orgs?status=${status}`, { token }),
   approveOrg: (orgId: string, token: string) =>
-    request<AdminOrg>(`/admin/orgs/${orgId}/approve`, { method: "POST", token }),
+    request<AdminOrg>(`/admin/orgs/${encodeURIComponent(orgId)}/approve`, { method: "POST", token }),
   rejectOrg: (orgId: string, token: string) =>
-    request<AdminOrg>(`/admin/orgs/${orgId}/reject`, { method: "POST", token }),
+    request<AdminOrg>(`/admin/orgs/${encodeURIComponent(orgId)}/reject`, { method: "POST", token }),
   consentOverdue: (token: string) => request<ConsentOverdue>("/admin/consent/overdue", { token }),
 };

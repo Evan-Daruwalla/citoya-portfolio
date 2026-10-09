@@ -10,7 +10,10 @@ import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { consentGated } from "@/lib/consent";
 import { usePublicQuery } from "@/lib/use-api";
 
-export function ReviewsSection({ orgId, opportunityId }: { orgId: string; opportunityId: string }) {
+// `opportunityId` is optional because the org's own page (PRD M17.1, 2026-10-06)
+// shows these reviews with no listing around them; the Report subject names where
+// the reader actually was.
+export function ReviewsSection({ orgId, opportunityId }: { orgId: string; opportunityId?: string }) {
   const { user, loading: authLoading } = useAuth();
   // Public: reviews render for a signed-out visitor, same as the listing around
   // them. Until this conversion the load was `.catch(() => undefined)` — a
@@ -126,7 +129,7 @@ export function ReviewsSection({ orgId, opportunityId }: { orgId: string; opport
                   support that listings and messages use; handled under P5 in
                   docs/SUPPORT_PROCEDURES.md. Not on your own review: delete it instead. */}
               {!r.mine && (
-                <ReportConcern subject={`Report a review (${r.id}) on listing ${opportunityId}`} label="Report" />
+                <ReportConcern subject={`Report a review (${r.id}) ${opportunityId ? `on listing ${opportunityId}` : `on the organization page ${orgId}`}`} label="Report" />
               )}
             </div>
           </div>

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApiError, api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
+import { isStripeCheckoutUrl } from "@/lib/checkout";
 import { BILLING_LIVE } from "@/lib/flags";
 
 function BillingInner() {
@@ -23,6 +24,11 @@ function BillingInner() {
     setError(null);
     try {
       const { url } = await api.createCheckout(token);
+      if (!isStripeCheckoutUrl(url)) {
+        setError("Checkout returned an unexpected address.");
+        setBusy(false);
+        return;
+      }
       window.location.href = url; // redirect to Stripe-hosted Checkout
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not start checkout.");

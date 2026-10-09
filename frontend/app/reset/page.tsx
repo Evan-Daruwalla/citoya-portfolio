@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useSyncExternalStore, type FormEvent } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 
 import { V1Shell } from "@/components/v1/v1-shell";
 import { ApiError, api } from "@/lib/api";
@@ -19,11 +19,23 @@ function subscribeToHash(onChange: () => void) {
 
 function ResetForm() {
   const router = useRouter();
+  // The fragment is removed from the address bar once read (below), so the token is held
+  // here: a later render must not read the emptied hash and lose it.
+  const captured = useRef("");
   const token = useSyncExternalStore(
     subscribeToHash,
-    () => window.location.hash.replace(/^#/, ""),
+    () => {
+      const fromHash = window.location.hash.replace(/^#/, "");
+      if (fromHash) captured.current = fromHash;
+      return captured.current;
+    },
     () => null
   );
+  // audit DY Low 37, 2026-10-07: the fragment never reaches a server, but it stayed in
+  // history and the address bar. The token is single-use, so drop it once it is read.
+  useEffect(() => {
+    if (token) window.history.replaceState(null, "", window.location.pathname + window.location.search);
+  }, [token]);
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
   const [done, setDone] = useState(false);

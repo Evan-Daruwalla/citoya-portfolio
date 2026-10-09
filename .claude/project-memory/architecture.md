@@ -6,7 +6,7 @@ Last updated 2026-09-24.
 **Dependencies + pinned versions → `dependencies.md`** (canonical). In brief:
 FastAPI + SQLAlchemy 2.0 (**sync** sessions) + Alembic + PostgreSQL (dev) /
 in-memory SQLite (tests); Next.js (App Router) + React 19 + TypeScript +
-Tailwind 3 + shadcn/ui.
+Tailwind 4 (since 2026-10-04, record EA; was 3) + shadcn/ui.
 
 ## Two frontend visual layers (BOTH live — know which a route uses)
 - **Scoped `.v1` exact-copy (2026-07-13, the 13 v1 screens):** v1's raw CSS ported VERBATIM into

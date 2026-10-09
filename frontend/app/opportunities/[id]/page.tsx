@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 
 import { ReportConcern } from "@/components/report-concern";
+import { ReviewsSection } from "@/components/reviews-section";
 import { V1Shell } from "@/components/v1/v1-shell";
 import { ApiError, api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
@@ -14,7 +15,6 @@ import { fmtEventDateTime } from "@/lib/event-time";
 import { usePublicQuery } from "@/lib/use-api";
 import { MessagesSection } from "./messages-section";
 import { OrgCheckinSection } from "./org-checkin-section";
-import { ReviewsSection } from "./reviews-section";
 import { SignupSection } from "./signup-section";
 
 const RECURRENCE_LABEL: Record<string, string> = {
@@ -111,12 +111,15 @@ export default function OpportunityDetailPage() {
           <div className="modal-card">
             <div className="mhdr">
               <div className="mtitle">{opp.title}</div>
-              <div className="msub">{opp.org_name}</div>
+              <div className="msub">
+                <Link href={`/organizations/${opp.org_id}`}>{opp.org_name}</Link>
+              </div>
             </div>
             <div className="mbody">
               <div className="badges-row" style={{ marginBottom: 14 }}>
                 {opp.featured && <span className="badge badge-featured">★ Featured</span>}
-                <span className="badge badge-verified">Open to All</span>
+                {/* audit DY Low 32, 2026-10-07: show the age limit instead of always "Open to All". */}
+                <span className="badge badge-verified">{opp.min_age ? `Ages ${opp.min_age}+` : "Open to All"}</span>
               </div>
 
               <div style={{ marginBottom: 12 }}>

@@ -6,10 +6,17 @@ import { useSWRConfig } from "swr";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { api } from "@/lib/api";
+import { ApiError, api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { useAuthedQuery } from "@/lib/use-api";
 import type { Notification } from "@/lib/types";
+
+// A notification link is only followed when it is a same-site path (audit DY Low 37,
+// 2026-10-07). "//host" and a "/" followed by a backslash are protocol-relative to a browser, so
+// they start with "/" yet leave the site; anything else (an absolute URL, "javascript:") is not a path.
+function isInternalPath(link: string): boolean {
+  return link.startsWith("/") && !link.startsWith("//") && !link.startsWith("/\\");
+}
 
 export default function NotificationsPage() {
   const { user, loading, refresh } = useAuth();
@@ -28,6 +35,9 @@ export default function NotificationsPage() {
   const { mutate: mutateKey } = useSWRConfig();
   const [emailPref, setEmailPref] = useState(true);
   const [savingPref, setSavingPref] = useState(false);
+  // audit DY Med 21, 2026-10-05: markRead/markAll used to reject unhandled, so a
+  // failed click did nothing visible.
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) setEmailPref(user.email_notifications);
@@ -51,17 +61,27 @@ export default function NotificationsPage() {
   async function markRead(id: string) {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return;
-    await api.markNotificationRead(id, token);
-    void mutate();
-    void mutateKey("notifications/unread-count");
+    setActionError(null);
+    try {
+      await api.markNotificationRead(id, token);
+      void mutate();
+      void mutateKey("notifications/unread-count");
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Couldn't update your notifications. Try again.");
+    }
   }
 
   async function markAll() {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return;
-    await api.markAllNotificationsRead(token);
-    void mutate();
-    void mutateKey("notifications/unread-count");
+    setActionError(null);
+    try {
+      await api.markAllNotificationsRead(token);
+      void mutate();
+      void mutateKey("notifications/unread-count");
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Couldn't update your notifications. Try again.");
+    }
   }
 
   if (loading) return null;
@@ -131,6 +151,10 @@ export default function NotificationsPage() {
         <p className="text-muted-foreground">No notifications yet.</p>
       )}
 
+      {actionError && (
+        <p className="text-sm text-destructive" role="alert">{actionError}</p>
+      )}
+
       <div className="flex flex-col gap-2">
         {notifications?.map((n) => (
           <Card key={n.id} className={n.read ? "opacity-60" : "border-primary"}>
@@ -141,7 +165,7 @@ export default function NotificationsPage() {
                   {n.title}
                 </p>
                 <p className="text-sm text-muted-foreground">{n.body}</p>
-                {n.link && (
+                {n.link && isInternalPath(n.link) && (
                   <Link href={n.link} className="text-xs text-primary underline-offset-4 hover:underline">
                     View
                   </Link>

@@ -7,6 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ApiError, api } from "@/lib/api";
 import type { ConsentManageContext } from "@/lib/types";
 
+import { GuardianDataActions } from "./data-actions";
+
+// audit DY Low 37, 2026-10-07: this token is long-lived and later actions need it, so it
+// cannot just be dropped like the single-use ones. It moves from the address bar into
+// sessionStorage (this tab only), so browser history no longer holds it and a reload in
+// the same tab still works.
+const CONSENT_STORAGE_SLOT = "citoya_consent_manage_token";
+
 export default function ConsentManagePage() {
   // The token arrives in the URL FRAGMENT (`/consent/manage#<token>`), not a path
   // segment. Everything after "#" stays inside the browser and is never sent to a
@@ -28,9 +36,24 @@ export default function ConsentManagePage() {
 
   useEffect(() => {
     const fromHash = window.location.hash.replace(/^#/, "");
-    tokenRef.current = fromHash;
-    (fromHash
-      ? api.manageContext(fromHash)
+    if (fromHash) {
+      tokenRef.current = fromHash;
+      try {
+        sessionStorage.setItem(CONSENT_STORAGE_SLOT, fromHash);
+      } catch {
+        // Storage blocked: the page works until it is reloaded, then the email link is needed.
+      }
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    } else if (!tokenRef.current) {
+      try {
+        tokenRef.current = sessionStorage.getItem(CONSENT_STORAGE_SLOT) ?? "";
+      } catch {
+        tokenRef.current = "";
+      }
+    }
+    const token = tokenRef.current;
+    (token
+      ? api.manageContext(token)
       : Promise.reject(new Error("missing fragment"))
     )
       .then(setCtx)
@@ -56,8 +79,20 @@ export default function ConsentManagePage() {
     }
   }
 
+  // A guardian delete scrubs the manage token too, so the link is dead from here on: drop
+  // it and show only the server's final message (K4, 2026-09-27).
+  function deleted(message: string) {
+    tokenRef.current = "";
+    try {
+      sessionStorage.removeItem(CONSENT_STORAGE_SLOT);
+    } catch {
+      // Nothing stored to remove.
+    }
+    setDone(message);
+  }
+
   return (
-    <main className="mx-auto flex max-w-md flex-col px-4 py-16">
+    <main className="mx-auto flex max-w-md flex-col gap-6 px-4 py-16">
       <Card className="w-full">
         <CardHeader>
           <CardTitle>Manage your approval</CardTitle>
@@ -71,10 +106,12 @@ export default function ConsentManagePage() {
               <p className="text-sm">
                 Approval for{" "}
                 <span className="font-medium">
-                  {ctx.student_first_name} {ctx.student_last_initial}
-                  {ctx.student_last_initial ? "." : ""}
+                  {ctx.student_first_name}
+                  {ctx.student_last_initial ? ` ${ctx.student_last_initial}.` : ""}
                 </span>
-                . Current status: <span className="font-medium">{ctx.status}</span>.
+                {/* The initial's own period ends the sentence ("Robin R. Current"), 2026-09-28. */}
+                {ctx.student_last_initial ? "" : "."} Current status:{" "}
+                <span className="font-medium">{ctx.status}</span>.
               </p>
               {error && <p className="text-sm text-destructive">{error}</p>}
               {ctx.status === "revoked" ? (
@@ -101,6 +138,13 @@ export default function ConsentManagePage() {
           )}
         </CardContent>
       </Card>
+      {ctx && !done && (
+        <GuardianDataActions
+          token={() => tokenRef.current}
+          childName={ctx.student_first_name}
+          onDeleted={deleted}
+        />
+      )}
     </main>
   );
 }

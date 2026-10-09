@@ -1,6 +1,7 @@
 "use client";
 
 import { TriangleAlert } from "lucide-react";
+import { useState } from "react";
 
 import { ReportConcern } from "@/components/report-concern";
 import { useAuth } from "@/lib/auth-context";
@@ -14,6 +15,7 @@ import { useAuth } from "@/lib/auth-context";
  */
 export function OrgReviewBanner() {
   const { user, refresh } = useAuth();
+  const [message, setMessage] = useState<string | null>(null);
 
   if (!user || user.role !== "org" || user.is_approved) return null;
 
@@ -34,6 +36,17 @@ export function OrgReviewBanner() {
     );
   }
 
+  // audit DY Med 21, 2026-10-05: a failed refresh used to reject unhandled and the
+  // click did nothing visible.
+  async function recheck() {
+    setMessage(null);
+    try {
+      await refresh();
+    } catch {
+      setMessage("Couldn't check your status. Try again.");
+    }
+  }
+
   // v1 editorial styling (.consent-zone), not shadcn/Tailwind, for the same reason
   // ConsentBanner gives: this renders inside the .v1 shell, where a generic amber
   // utility box reads as foreign.
@@ -51,10 +64,11 @@ export function OrgReviewBanner() {
         {" "}We aim to review new organizations within 3 business days.
       </p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={refresh}>
+        <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={recheck}>
           I&apos;ve been approved. Refresh
         </button>
       </div>
+      {message && <p style={{ marginTop: 10, marginBottom: 0 }}>{message}</p>}
     </div>
   );
 }
