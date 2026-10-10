@@ -152,7 +152,7 @@ export function MessagesSection({
           </button>
         </form>
         {sentNote && <p className="progress-label" style={{ marginTop: 0 }}>{sentNote}</p>}
-        {submitError && <p className="ferr" style={{ marginBottom: 0 }}>{submitError}</p>}
+        {submitError && <p className="ferr" role="alert" style={{ marginBottom: 0 }}>{submitError}</p>}
         <p className="progress-label" style={{ marginTop: 0 }}>
           <ReportConcern subject={`Report a message on listing ${opportunityId}`} label="Report a message" />
         </p>

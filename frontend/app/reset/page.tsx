@@ -65,7 +65,7 @@ function ResetForm() {
     return <p style={{ fontSize: ".85rem", color: "var(--muted)" }}>Loading…</p>;
   }
   if (!token) {
-    return <div className="ferr" style={{ display: "block" }}>This reset link is missing its token. Request a new one.</div>;
+    return <div className="ferr" role="alert" style={{ display: "block" }}>This reset link is missing its token. Request a new one.</div>;
   }
   if (done) {
     return (
@@ -77,7 +77,7 @@ function ResetForm() {
   }
   return (
     <form onSubmit={onSubmit}>
-      {error && <div className="ferr" style={{ display: "block" }}>{error}</div>}
+      {error && <div className="ferr" role="alert" style={{ display: "block" }}>{error}</div>}
       <div className="fr">
         <label htmlFor="reset-password">New password</label>
         <input id="reset-password" className="fc" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" />

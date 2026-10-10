@@ -9,14 +9,15 @@ import { api, ApiError, TOKEN_KEY } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { eventInstant } from "@/lib/event-time";
 import { useAuthedQuery, usePublicQuery } from "@/lib/use-api";
-import type { AdminOrg, RouteHitRead, TrafficSummary } from "@/lib/types";
+import type { AdminOrg, AuditLogEntry, RouteHitRead, TrafficSummary } from "@/lib/types";
 
-type Tab = "pending" | "all-orgs" | "reports";
+type Tab = "pending" | "all-orgs" | "reports" | "audit";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "pending", label: "Pending Orgs" },
   { id: "all-orgs", label: "All Orgs" },
   { id: "reports", label: "Reports" },
+  { id: "audit", label: "Audit log" },
 ];
 
 // ── M14.1 site traffic ──
@@ -25,6 +26,13 @@ const TRAFFIC_WINDOWS: TrafficDays[] = [7, 30, 90];
 // The API has ~75 route templates and a 30-day window returns 300+ raw rows, so the
 // table shows the head of the distribution rather than everything.
 const TOP_ROUTES = 15;
+
+// Audit log screen and consent reopen (PRD possible feature #11, 2026-10-09); reopen
+// targets come from the log rows, so no new lookup of minors is added.
+const AUDIT_PAGE = 50;
+// `consent_manage_link_undelivered` joined 2026-10-09 (decision 8A): the approval stands but the
+// guardian never got the manage link, and reopening re-sends the invite.
+const REOPENABLE = new Set(["consent_declined", "consent_revoked", "consent_manage_link_undelivered"]);
 
 type RouteTotal = { route: string; method: string; count: number };
 
@@ -120,6 +128,15 @@ export default function AdminPage() {
     user?.is_admin ? "admin/consent/overdue" : null,
     (t) => api.consentOverdue(t),
   );
+  const [auditOffset, setAuditOffset] = useState(0);
+  const auditQ = useAuthedQuery(
+    user?.is_admin && tab === "audit" ? `audit-log?offset=${auditOffset}` : null,
+    (t) => api.auditLog(AUDIT_PAGE, auditOffset, t),
+  );
+  const [reopeningId, setReopeningId] = useState<string | null>(null);
+  const [reopenBusy, setReopenBusy] = useState(false);
+  const [reopenMsg, setReopenMsg] = useState<string | null>(null);
+  const [reopenError, setReopenError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [decideError, setDecideError] = useState<string | null>(null);
 
@@ -141,6 +158,24 @@ export default function AdminPage() {
       setDecideError(err instanceof ApiError ? err.message : "Couldn't save that decision.");
     } finally {
       setBusyId(null);
+    }
+  }
+
+  async function reopen(studentId: string) {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
+    setReopenBusy(true);
+    setReopenError(null);
+    setReopenMsg(null);
+    try {
+      const r = await api.reopenConsent(studentId, token);
+      setReopenMsg(r.message);
+      setReopeningId(null);
+      void auditQ.mutate();
+    } catch (err) {
+      setReopenError(err instanceof ApiError ? err.message : "Something went wrong.");
+    } finally {
+      setReopenBusy(false);
     }
   }
 
@@ -179,7 +214,7 @@ export default function AdminPage() {
     if (q.error && !q.data) {
       return (
         <div className="load-error">
-          <div className="ferr">Couldn&apos;t load organizations.</div>
+          <div className="ferr" role="alert">Couldn&apos;t load organizations.</div>
           <div>
             <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={q.retry}>Retry</button>
           </div>
@@ -230,6 +265,104 @@ export default function AdminPage() {
     );
   }
 
+  /** The audit log page: newest first, 50 per page; consent declines/revokes offer a reopen. */
+  function auditPanel() {
+    const q = auditQ;
+    const short = (id: string) => id.slice(0, 8);
+    let body;
+    if (q.error && !q.data) {
+      body = (
+        <div className="load-error">
+          <div className="ferr" role="alert">Couldn&apos;t load the audit log.</div>
+          <div>
+            <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={q.retry}>Retry</button>
+          </div>
+        </div>
+      );
+    } else if (q.loading || !q.data) {
+      body = <div className="skel-card" aria-busy="true"><div className="skel skel-line" style={{ width: "70%" }} /></div>;
+    } else if (q.data.length === 0) {
+      body = <div className="empty">{auditOffset === 0 ? "No audit entries yet." : "No older entries."}</div>;
+    } else {
+      body = (
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th scope="col">When</th>
+              <th scope="col">Action</th>
+              <th scope="col">Actor</th>
+              <th scope="col">Target</th>
+              <th scope="col">Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            {q.data.map((e: AuditLogEntry) => {
+              const meta = JSON.stringify(e.meta);
+              const canReopen = REOPENABLE.has(e.action) && !!e.target;
+              return (
+                <tr key={e.id}>
+                  <td>{new Date(e.created_at).toLocaleString()}</td>
+                  <td>
+                    {e.action}
+                    {canReopen && e.target && (
+                      <div style={{ marginTop: 6 }}>
+                        {reopeningId === e.id ? (
+                          <>
+                            <span style={{ fontSize: ".8rem" }}>Reopen this student&apos;s consent and re-email the guardian on file?</span>
+                            <div style={{ marginTop: 4 }}>
+                              <button className="btn-s" style={{ padding: "5px 12px", fontSize: ".78rem", marginRight: 6 }} disabled={reopenBusy} onClick={() => reopen(e.target as string)}>
+                                Confirm
+                              </button>
+                              <button className="btn-s" style={{ padding: "5px 12px", fontSize: ".78rem" }} disabled={reopenBusy} onClick={() => setReopeningId(null)}>
+                                Cancel
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <button
+                            className="btn-s"
+                            style={{ padding: "5px 12px", fontSize: ".78rem" }}
+                            onClick={() => {
+                              setReopeningId(e.id);
+                              setReopenError(null);
+                              setReopenMsg(null);
+                            }}
+                          >
+                            Reopen consent
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                  <td title={e.actor_id ?? undefined}>{e.actor_id ? short(e.actor_id) : "system"}</td>
+                  <td title={e.target ?? undefined}>{e.target ? short(e.target) : "—"}</td>
+                  <td title={meta} style={{ fontFamily: "ui-monospace, monospace", fontSize: ".78rem" }}>
+                    {meta.length > 120 ? `${meta.slice(0, 120)}…` : meta}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      );
+    }
+    return (
+      <>
+        {reopenMsg && <p role="status">{reopenMsg}</p>}
+        {reopenError && <p className="ferr" role="alert">{reopenError}</p>}
+        {body}
+        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+          <button className="btn-s" style={{ padding: "7px 14px", fontSize: ".8rem" }} disabled={auditOffset === 0} onClick={() => setAuditOffset(Math.max(0, auditOffset - AUDIT_PAGE))}>
+            Newer
+          </button>
+          <button className="btn-s" style={{ padding: "7px 14px", fontSize: ".8rem" }} disabled={!q.data || q.data.length < AUDIT_PAGE} onClick={() => setAuditOffset(auditOffset + AUDIT_PAGE)}>
+            Older
+          </button>
+        </div>
+      </>
+    );
+  }
+
   return (
     <V1Shell>
       <div className="section">
@@ -240,7 +373,7 @@ export default function AdminPage() {
             moderation tools are still not screens here, and it says so. */}
         <div className="ferr" style={{ display: "block", background: "#fff8e1", borderColor: "#ffc107", color: "#795548", marginBottom: 24 }}>
           Organization review works below. Reports arrive by email through the &ldquo;Report a
-          concern&rdquo; links, and the audit log is readable through the API only.
+          concern&rdquo; links, and the audit log is on its own tab below.
         </div>
 
         <div className="admin-grid">
@@ -279,7 +412,7 @@ export default function AdminPage() {
           {trafficError ? (
             <div className="load-error">
               <div className="empty-icon"><TriangleAlert size={40} strokeWidth={1.75} aria-hidden /></div>
-              <div className="ferr">Couldn&apos;t load site traffic. Check your connection and try again.</div>
+              <div className="ferr" role="alert">Couldn&apos;t load site traffic. Check your connection and try again.</div>
               <div>
                 <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={retryTraffic}>
                   Retry
@@ -370,8 +503,9 @@ export default function AdminPage() {
             </>
           )}
           {tab === "reports" && (
-            <div className="empty"><div className="empty-icon"><Flag size={40} strokeWidth={1.75} aria-hidden /></div>Reports arrive by email through the &ldquo;Report a concern&rdquo; links (procedure P5). The audit log is readable through the API (<code>GET /api/v1/audit-log</code>); it has no screen here.</div>
+            <div className="empty"><div className="empty-icon"><Flag size={40} strokeWidth={1.75} aria-hidden /></div>Reports arrive by email through the &ldquo;Report a concern&rdquo; links (procedure P5). The audit log is on the Audit log tab.</div>
           )}
+          {tab === "audit" && auditPanel()}
         </div>
       </div>
     </V1Shell>

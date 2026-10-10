@@ -7,7 +7,7 @@ Last updated 2026-10-08 (audit DY Low 50: the header and counts below had stood 
   2026-07-12 — full stack boots, migrations applied on real Postgres), **M12 v1 visual parity**
   (2026-07-12), and two off-roadmap Evan-directed 2026-07-13 blocks: **v1 EXACT-COPY** (all 13
   screens rebuilt in the scoped `.v1` architecture — see architecture.md/conventions.md) and a
-  **public-portfolio slice**. **1004 collected (999 passed + 5 skipped on SQLite; 1004 passed on Postgres), migrations 0001-0041 (2026-10-08, record EH; the full count history is in testing.md;
+  **public-portfolio slice**. **1151 collected (1146 passed + 5 skipped on SQLite; 1151 passed on Postgres), migrations 0001-0043 (2026-10-10, record EU; 1147 at record ET; 1092 at record ER; 1042 at record EQ; 1023 at record EP; 1006 at record EL; before that 1004 collected, 999 + 5 on SQLite, 1004 on Postgres, record EH; the full count history is in testing.md;
   supersedes 704 of 2026-09-27 22:12-22:20 CDT (CX), 697 of ~20:43 (CQ), 691 of ~19:16 (CP), 684 of ~18:20 (CO), 682 of ~17:44 (CN), 673 of ~17:32 (CM), 665 of ~17:17 (CL), 646 of ~16:54 (CJ), 633 of 2026-09-26 ~23:23 (CG), 589 of ~01:14 (BV), 588 of ~00:40 (BU), 582 of 2026-09-25 ~22:06 (BS), 578 of 2026-09-24 ~23:49 (BR), 542 of ~22:43 (BQ), 533 of ~21:09 (BJ), 516 of 2026-09-23 ~22:20 CDT, 513 of 21:08, 512 of ~20:58, 509 of ~20:45, 508 of ~16:20, 507 of ~15:48 the same day and 454/0001–0029 of 2026-09-20, which superseded the 327/0001–0024 figure of 2026-08-19, which superseded 189/0001–0021). M11 launch = BLOCKED-ON-EVAN (host, domain/DNS, prod
   secrets, Resend key, Turnstile key, SUPPORT_EMAIL, legal).**
 - **M13 / M14 (added 2026-09-02).** This section stopped at M9/M10/M12 while INDEX.md
@@ -98,12 +98,26 @@ Last updated 2026-10-08 (audit DY Low 50: the header and counts below had stood 
   Move up / Move down, no drag and drop. `/awards/my` and the portfolios still show awards (T4).
   Since then every student page reads ALL hours rows under `hours/mine` (`api.listAllHours`);
   it held the newest 100 only.
+- **Bulk hour verification (2026-10-09, M17.2, record EP, `822df6f`):** `POST /hours/verify-bulk`,
+  at most 200 ids, approve only, one transaction, per-id outcome (verified, or skipped:
+  not_found / forbidden / already_decided / student_inactive / duplicate). It shares
+  `_record_decision` with the single PATCH (the routes' remaining differences are in
+  `security-orgs-and-fixes.md`). `/verify-hours` has
+  checkboxes, Select all and "Verify selected".
+- **Review editing (2026-10-09, PRD #10, record EP, `4835b1e`):** `PATCH /orgs/{org_id}/reviews/
+  {review_id}`, author only, consent-gated, only while the org is active and approved; audit
+  `review_edited` holds the org id, never the text. No "edited" marker.
+- **Skill endorsements (2026-10-09, M17.3, record EQ, `317d28c`):** an approved org endorses one
+  skill that is on its own listing where the student has VERIFIED hours (no free text about a
+  minor); 404 for an inactive or consent-gated student; either side deletes; shown on the
+  dashboard Impact tab and on a public portfolio; scrubbed both ways; exported to the student.
 - **Roster CSV export is free for every org (2026-09-26, #8 option A).** The pricing page, the
   terms and the dashboard upgrade copy used to sell it as Pro. It is built in the browser from
   data the org already loads, so a plan gate would have enforced nothing.
 - Hardening (M9): (M9.1) `RateLimitMiddleware` (`app/core/rate_limit.py`) — 60s window per
   (IP, bucket): WRITES under `/auth/` 30/min + other writes 120/min; reads free (`GET /auth/me` too, since 2026-09-22 — T1) except the three token-checking
   consent GETs, which spend the auth bucket since 2026-09-28 (DM L3; corrected 2026-09-30); 429 + Retry-After;
+  Since 2026-10-09 (audit F1 A-F9, D-F5): the four token-checking consent POSTs (`/consent/manage`, `/manage/delete`, `/manage/step-up`, `/consent/decide`) spend the auth bucket too (the calendar feed GET deliberately not: Google fetches every feed from shared IPs), and an IPv6 client is counted per /64 (`_limit_key`; IPv4-mapped addresses stay per address; recorded IPs are unchanged).
   config `RATE_LIMIT_*`; added before CORS; `reset()` called per test in conftest.
   **SHARED STORE since 2026-09-05** (migration 0027, `rate_limit_hits`): fixed windows with a
   weighted look-back, so instances share one view instead of each keeping its own count and
@@ -126,7 +140,7 @@ Last updated 2026-10-08 (audit DY Low 50: the header and counts below had stood 
   Checkout Session, inline price_data, → `{url}`; 503 if unconfigured, 409 if already pro) +
   `POST /billing/webhook` (signature-verified via `stripe.Webhook.construct_event` over the RAW body;
   `checkout.session.completed`→pro + store `stripe_customer_id` (migration 0019),
-  `customer.subscription.deleted`→free). `stripe==11.4.1`; test-mode keys in `.env`;
+  `customer.subscription.deleted`→free). `stripe==11.6.0` (was 11.4.1 until 2026-10-09); test-mode keys in `.env`;
   `STRIPE_WEBHOOK_SECRET` from `stripe listen`. Tests mock stripe + monkeypatch `settings`. No
   self-serve plan flip — only the webhook does it. Tests flip plan via the `conftest.py` `db_session`
   fixture.

@@ -219,7 +219,7 @@ export default function MyHoursPage() {
       {appsQ.error && (
         <Card>
           <CardContent className="flex flex-col items-start gap-2 pt-6 text-sm">
-            <p className="ferr" style={{ marginBottom: 0 }}>
+            <p className="ferr" role="alert" style={{ marginBottom: 0 }}>
               Couldn&apos;t load your opportunities, so check-in and self-report aren&apos;t available.
             </p>
             <button className="btn-s" style={{ padding: "8px 16px", fontSize: ".8rem" }} onClick={retryAll}>
@@ -373,7 +373,7 @@ export default function MyHoursPage() {
               </Button>
             </div>
             {offsite.message && <p className="text-sm text-muted-foreground">{offsite.message}</p>}
-            {offsite.error && <p className="ferr" style={{ marginBottom: 0 }}>{offsite.error}</p>}
+            {offsite.error && <p className="ferr" role="alert" style={{ marginBottom: 0 }}>{offsite.error}</p>}
           </form>
         </CardContent>
       </Card>
@@ -381,7 +381,7 @@ export default function MyHoursPage() {
       {/* ONE render site for write failures. It sits outside the forms card
           because Appeal lives in the entry list below and can fail while the
           card is not rendered at all. */}
-      {formError && <p className="ferr" style={{ marginBottom: 0 }}>{formError}</p>}
+      {formError && <p className="ferr" role="alert" style={{ marginBottom: 0 }}>{formError}</p>}
 
       {hoursQ.loading && <p className="empty-state">Loading…</p>}
 
@@ -391,7 +391,7 @@ export default function MyHoursPage() {
       {!hoursQ.loading && hoursQ.error && hoursQ.data === undefined && (
         <div className="load-error">
           <div className="empty-icon"><TriangleAlert size={40} strokeWidth={1.75} aria-hidden /></div>
-          <div className="ferr">Couldn&apos;t load your hours. Check your connection and try again.</div>
+          <div className="ferr" role="alert">Couldn&apos;t load your hours. Check your connection and try again.</div>
           <div>
             <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={retryAll}>
               Retry

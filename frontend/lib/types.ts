@@ -27,6 +27,9 @@ export interface User {
   org_reviewed_at: string | null;
   email_notifications: boolean;
   portfolio_public: boolean;
+  /** 12B (2026-10-09): false leaves a student off the public leaderboard and shows their
+   *  reviews as "A Citoya student". Meaningful only for role === "student". */
+  public_name_visible: boolean;
   plan: "free" | "pro";
   created_at: string;
   dob: string | null;
@@ -135,6 +138,19 @@ export interface HoursWithOpportunity extends Hours {
   student_inactive?: boolean;
 }
 
+// POST /hours/verify-bulk (PRD M17.2, 2026-10-09).
+export interface HoursBulkResult {
+  id: string;
+  outcome: "verified" | "skipped";
+  reason: "not_found" | "forbidden" | "already_decided" | "student_inactive" | "duplicate" | null;
+}
+
+export interface HoursBulkVerifyResponse {
+  results: HoursBulkResult[];
+  verified: number;
+  skipped: number;
+}
+
 // ── Calendar (M16.4, 2026-09-27) ──
 // One entry on the student's calendar: an occurrence of an approved signup, or one of
 // the student's own events (private, never hours).
@@ -224,6 +240,18 @@ export interface PublicPortfolio {
   organizations: number;
   hours_by_org: { org_name: string; hours: number }[];
   awards: Award[];
+  // Skills an organization endorsed after verifying hours (PRD M17.3, 2026-10-09).
+  endorsements: { org_name: string; skill: string }[];
+}
+
+// A skill an organization endorsed for a student (PRD M17.3, 2026-10-09).
+export interface Endorsement {
+  id: string;
+  org_id: string;
+  org_name: string;
+  student_id: string;
+  skill: string;
+  created_at: string;
 }
 
 export interface Review {
@@ -317,6 +345,9 @@ export interface OpportunityCreateInput {
   timezone: string;
 }
 
+/** PATCH /opportunities/{id} body (decision 13A): every create field, all optional. */
+export type OpportunityUpdateInput = Partial<OpportunityCreateInput>;
+
 // ── Analytics (M14.1) ──
 // Mirrors backend/app/schemas/analytics.py. `route_hits` has NO user, IP, session
 // or opportunity column by design, so nothing derived from these types may ever be
@@ -368,6 +399,16 @@ export type OrgReviewStatus = "pending" | "approved" | "rejected";
 export interface ConsentOverdue {
   count: number;
   hours: number;
+}
+
+/** One row of the admin audit log (PRD possible feature #11). */
+export interface AuditLogEntry {
+  id: string;
+  actor_id: string | null;
+  action: string;
+  target: string | null;
+  meta: Record<string, unknown>;
+  created_at: string;
 }
 
 export interface TrafficSummary {

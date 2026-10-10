@@ -2,13 +2,13 @@
 
 import { Link2, Lock, Printer, Trophy } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { V1Shell } from "@/components/v1/v1-shell";
 import { ApiError, api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { useAuthedQuery } from "@/lib/use-api";
-import type { HoursWithOpportunity, MyAwards } from "@/lib/types";
+import type { HoursWithOpportunity } from "@/lib/types";
 
 export default function PortfolioPage() {
   const { user, loading } = useAuth();
@@ -36,6 +36,10 @@ export default function PortfolioPage() {
   const isPublic = publicOverride ?? user?.portfolio_public ?? false;
   const [copied, setCopied] = useState(false);
   const [toggleError, setToggleError] = useState<string | null>(null);
+  // Same shape for the leaderboard/review-byline opt-out (decision 12B, 2026-10-09).
+  const [nameOverride, setNameOverride] = useState<boolean | null>(null);
+  const nameVisible = nameOverride ?? user?.public_name_visible ?? true;
+  const [nameError, setNameError] = useState<string | null>(null);
 
   async function togglepublic(next: boolean) {
     const token = localStorage.getItem(TOKEN_KEY);
@@ -48,6 +52,20 @@ export default function PortfolioPage() {
       setPublicOverride(!next); // revert on failure
       // audit DY Low 42, 2026-10-07: the revert alone left no sign the click had failed.
       setToggleError(err instanceof ApiError ? err.message : "Could not update your privacy setting.");
+    }
+  }
+
+  async function toggleNameVisible(next: boolean) {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
+    setNameOverride(next); // optimistic
+    setNameError(null);
+    try {
+      await api.updateMe(token, { public_name_visible: next });
+    } catch (err) {
+      setNameOverride(!next); // revert on failure
+      // Turning it ON is a 403 for a consent-blocked minor; the backend's message says why.
+      setNameError(err instanceof ApiError ? err.message : "Could not update your privacy setting.");
     }
   }
 
@@ -169,7 +187,17 @@ export default function PortfolioPage() {
               organizations, and awards (good for college and scholarship applications). Off by default.
             </span>
           </label>
-          {toggleError && <div className="ferr" style={{ display: "block", marginTop: 10 }}>{toggleError}</div>}
+          {toggleError && <div className="ferr" role="alert" style={{ display: "block", marginTop: 10 }}>{toggleError}</div>}
+          <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", fontWeight: 400, textTransform: "none", letterSpacing: 0, marginTop: 14 }}>
+            <input type="checkbox" checked={nameVisible} onChange={(e) => toggleNameVisible(e.target.checked)} style={{ width: 15, height: 15, marginTop: 3, accentColor: "var(--green)" }} />
+            <span style={{ fontSize: ".85rem", color: "var(--text)", fontWeight: 600 }}>
+              Show my name on the leaderboard and on my reviews
+            </span>
+          </label>
+          <p style={{ fontSize: ".78rem", color: "var(--muted)", margin: "2px 0 0 25px" }}>
+            When off, you are left off the public leaderboard and your reviews show as &quot;A Citoya student&quot;.
+          </p>
+          {nameError && <div className="ferr" role="alert" style={{ display: "block", marginTop: 10 }}>{nameError}</div>}
         </div>
       </div>
     </V1Shell>

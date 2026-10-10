@@ -44,7 +44,7 @@ export default function ForgotPasswordPage() {
               <p style={{ fontSize: ".85rem", color: "var(--muted)" }}>{message}</p>
             ) : (
               <form onSubmit={onSubmit}>
-                {error && <div className="ferr" style={{ display: "block" }}>{error}</div>}
+                {error && <div className="ferr" role="alert" style={{ display: "block" }}>{error}</div>}
                 <p style={{ fontSize: ".85rem", color: "var(--muted)", marginBottom: 14 }}>
                   Enter your account email and we&apos;ll send you a reset link (valid for 1 hour).
                 </p>

@@ -4,7 +4,7 @@ Last updated 2026-09-24.
 
 ## Stack
 **Dependencies + pinned versions → `dependencies.md`** (canonical). In brief:
-FastAPI + SQLAlchemy 2.0 (**sync** sessions) + Alembic + PostgreSQL (dev) /
+FastAPI + SQLAlchemy 2.1 (**sync** sessions) + Alembic + PostgreSQL (dev) /
 in-memory SQLite (tests); Next.js (App Router) + React 19 + TypeScript +
 Tailwind 4 (since 2026-10-04, record EA; was 3) + shadcn/ui.
 

@@ -75,7 +75,7 @@ function LoginInner() {
                   {new Intl.DateTimeFormat(undefined, { dateStyle: "long", timeStyle: "short" }).format(pendingUntil)}.
                   {" "}Restore it?
                 </p>
-                {error && <div className="ferr" style={{ display: "block" }}>{error}</div>}
+                {error && <div className="ferr" role="alert" style={{ display: "block" }}>{error}</div>}
                 <div style={{ display: "flex", gap: 8 }}>
                   <button className="btn-p" type="button" onClick={() => void signIn(true)} disabled={submitting}>
                     {submitting ? "Restoring…" : "Restore"}
@@ -98,7 +98,7 @@ function LoginInner() {
                   </div>
                 )}
                 <form onSubmit={onSubmit}>
-                  {error && <div className="ferr" style={{ display: "block" }}>{error}</div>}
+                  {error && <div className="ferr" role="alert" style={{ display: "block" }}>{error}</div>}
                   <div className="fr">
                     <label htmlFor="login-email">Email</label>
                     <input id="login-email" className="fc" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />

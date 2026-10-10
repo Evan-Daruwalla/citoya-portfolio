@@ -95,7 +95,7 @@ export default function RegisterPage() {
             </div>
 
             <form onSubmit={onSubmit}>
-              {error && <div className="ferr" style={{ display: "block" }}>{error}</div>}
+              {error && <div className="ferr" role="alert" style={{ display: "block" }}>{error}</div>}
               <div className="fr">
                 <label htmlFor="register-name">{role === "org" ? "Organization Name" : "Full Name (legal)"} <span style={{ color: "var(--red)" }}>*</span></label>
                 <input id="register-name" className="fc" required value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={role === "org" ? "Green Roots Community Garden" : "Alex Johnson"} />

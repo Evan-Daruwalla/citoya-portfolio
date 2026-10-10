@@ -75,7 +75,7 @@ function HoursReport() {
 
         {hoursQ.error && hoursQ.data === undefined ? (
           <div className="load-error">
-            <div className="ferr">Couldn&apos;t load your hours, so there is nothing to print yet.</div>
+            <div className="ferr" role="alert">Couldn&apos;t load your hours, so there is nothing to print yet.</div>
             <button className="btn-s" onClick={hoursQ.retry}>Retry</button>
           </div>
         ) : hoursQ.data === undefined ? (

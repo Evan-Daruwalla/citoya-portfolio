@@ -11,15 +11,20 @@ import { hoursTitle } from "@/lib/hours";
 import { useAuthedQuery } from "@/lib/use-api";
 import type { HoursWithOpportunity } from "@/lib/types";
 
+const BULK_MAX = 200; // backend HoursBulkVerify caps ids at 200
+
 export default function VerifyHoursPage() {
   const { user, loading } = useAuth();
+  // The org side of GET /hours answers 403 until an admin approves the org (decision 3A,
+  // 2026-10-09), so the fetch is held for an unapproved or rejected org (key null).
+  const approvedOrg = user?.role === "org" && user.is_approved === true;
   const {
     data,
     loading: fetching,
     error: loadError,
     retry,
     mutate,
-  } = useAuthedQuery("hours/org-queue", (t) => api.listHours(t));
+  } = useAuthedQuery(approvedOrg ? "hours/org-queue" : null, (t) => api.listHours(t));
   const entries = (data ?? []) as HoursWithOpportunity[];
   // Separate from `loadError`: this one reports a failed APPROVE/DENY, which the
   // user must see next to the row they acted on, not in place of the list.
@@ -29,6 +34,34 @@ export default function VerifyHoursPage() {
   // field, a second confirms. A misclick used to deny and notify the student at once.
   const [denyingId, setDenyingId] = useState<string | null>(null);
   const [denyNote, setDenyNote] = useState("");
+  // Bulk approve (PRD M17.2, 2026-10-09); deny stays per row because it carries a note.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkSummary, setBulkSummary] = useState<string | null>(null);
+
+  async function verifySelected(ids: string[]) {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
+    setError(null);
+    setBulkBusy(true);
+    try {
+      const res = await api.verifyHoursBulk(ids, token);
+      const counts = new Map<string, number>();
+      for (const r of res.results) {
+        if (r.outcome === "skipped" && r.reason) counts.set(r.reason, (counts.get(r.reason) ?? 0) + 1);
+      }
+      const reasons = Array.from(counts, ([reason, n]) => `${n} ${reason.replace(/_/g, " ")}`).join(", ");
+      setBulkSummary(
+        `Verified ${res.verified}.` + (res.skipped > 0 ? ` Skipped ${res.skipped} (${reasons}).` : ""),
+      );
+      setSelected(new Set());
+      void mutate();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Something went wrong.");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
 
   async function decide(hoursId: string, action: "approve" | "deny", note?: string) {
     const token = localStorage.getItem(TOKEN_KEY);
@@ -61,6 +94,18 @@ export default function VerifyHoursPage() {
 
   const SOURCE_LABEL: Record<string, string> = { auto: "auto-logged", self: "self-reported", checkin: "check-in" };
 
+  const selectedIds = pending.filter((e) => selected.has(e.id)).map((e) => e.id);
+  const allSelected = pending.length > 0 && selectedIds.length === pending.length;
+
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-10">
       <div>
@@ -68,7 +113,17 @@ export default function VerifyHoursPage() {
         <h1 className="section-title">Verify Hours</h1>
       </div>
 
-      {fetching && <p className="empty-state">Loading…</p>}
+      {/* Not OrgReviewBanner: that component is styled for the .v1 shell and this page is not in it.
+          The queue is not fetched for an unapproved org, so say why instead of showing an empty list. */}
+      {!approvedOrg && (
+        <div className="empty-state">
+          {user.org_reviewed_at
+            ? "Your organization wasn't approved, so there are no hours to verify."
+            : "Your organization is being reviewed. Hours to verify will appear here once it is approved."}
+        </div>
+      )}
+
+      {approvedOrg && fetching && <p className="empty-state">Loading…</p>}
 
       {/* Not the empty state: telling an org "nothing to verify" because the
           request failed hides real students waiting on their hours. */}
@@ -79,16 +134,52 @@ export default function VerifyHoursPage() {
         </div>
       )}
 
-      {!fetching && !loadError && pending.length === 0 && (
+      {!fetching && !loadError && approvedOrg && pending.length === 0 && (
         <div className="empty-state">No hours awaiting verification.</div>
       )}
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+
+      {pending.length > 0 && (
+        <div className="flex items-center justify-between gap-3">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              aria-label="Select all hours awaiting verification"
+              checked={allSelected}
+              onChange={() => setSelected(allSelected ? new Set() : new Set(pending.map((e) => e.id)))}
+            />
+            Select all
+          </label>
+          <Button
+            size="sm"
+            disabled={selectedIds.length === 0 || bulkBusy}
+            onClick={() => void verifySelected(selectedIds.slice(0, BULK_MAX))}
+          >
+            {/* The API takes at most 200 ids per call; a larger select-all sends the first 200. */}
+            {selectedIds.length > BULK_MAX
+              ? `Verify first ${BULK_MAX} of ${selectedIds.length} selected`
+              : `Verify selected (${selectedIds.length})`}
+          </Button>
+        </div>
+      )}
+      {bulkSummary && (
+        <p className="text-sm" role="status">
+          {bulkSummary}
+        </p>
+      )}
 
       <div className="flex flex-col gap-4">
         {pending.map((entry) => (
           <div key={entry.id} className="opp-card">
             <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
+              <input
+                type="checkbox"
+                className="mt-1"
+                aria-label={`Select ${entry.student_name ?? "this entry"}'s hours`}
+                checked={selected.has(entry.id)}
+                onChange={() => toggleOne(entry.id)}
+              />
+              <div className="min-w-0 flex-1">
                 <h3 className="opp-title">
                   {hoursTitle(entry)}
                   {entry.status === "appealed" && <span className="badge badge-pending ml-2">Appealed</span>}

@@ -76,7 +76,7 @@ export default function ConsentDecisionPage() {
                 listed you as their parent or guardian. They can&apos;t sign up for any volunteer
                 opportunity until you approve. You can revoke your approval anytime.
               </p>
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
               <div className="flex gap-3">
                 <Button onClick={() => decide("approve")} disabled={busy}>
                   Approve
@@ -87,7 +87,7 @@ export default function ConsentDecisionPage() {
               </div>
             </>
           ) : error ? (
-            <p className="text-sm text-destructive">{error}</p>
+            <p className="text-sm text-destructive" role="alert">{error}</p>
           ) : (
             <p className="text-sm text-muted-foreground">Loading…</p>
           )}

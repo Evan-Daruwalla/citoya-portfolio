@@ -93,7 +93,8 @@ export function CalendarFeed() {
             </button>
           </div>
           <p className="progress-label" style={{ marginTop: 0 }}>
-            This link is shown only now. Google Calendar can take several hours to show changes.
+            This link is shown only now. &ldquo;Add to Google Calendar&rdquo; gives the link to Google, which keeps it
+            in your Google account. Google Calendar can take several hours to show changes.
           </p>
         </>
       )}
@@ -120,8 +121,8 @@ export function CalendarFeed() {
           </>
         )}
       </div>
-      {statusQ.error && <p className="ferr" style={{ marginTop: 12 }}>Couldn&apos;t check your calendar link.</p>}
-      {error && <p className="ferr" style={{ marginTop: 12 }}>{error}</p>}
+      {statusQ.error && <p className="ferr" role="alert" style={{ marginTop: 12 }}>Couldn&apos;t check your calendar link.</p>}
+      {error && <p className="ferr" role="alert" style={{ marginTop: 12 }}>{error}</p>}
     </div>
   );
 }

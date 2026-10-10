@@ -205,7 +205,7 @@ export function GoalsPanel({
           <button className="btn-p" type="submit" style={{ padding: "9px 18px", fontSize: ".82rem" }} disabled={busy || !choice || (own && !title.trim())}>Add goal</button>
         </form>
       </div>
-      {error && <p className="ferr">{error}</p>}
+      {error && <p className="ferr" role="alert">{error}</p>}
 
       {completed.length > 0 && (
         <>

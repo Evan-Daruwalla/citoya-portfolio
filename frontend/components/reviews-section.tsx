@@ -37,6 +37,27 @@ export function ReviewsSection({ orgId, opportunityId }: { orgId: string; opport
   const [submitting, setSubmitting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  // Author edits their review (PRD #10, 2026-10-09).
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editRating, setEditRating] = useState(5);
+  const [editText, setEditText] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  async function onSaveEdit(reviewId: string) {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
+    setDeleteError(null);
+    setSavingEdit(true);
+    try {
+      await api.updateReview(orgId, reviewId, { rating: editRating, text: editText }, token);
+      void mutate();
+      setEditingId(null);
+    } catch (err) {
+      setDeleteError(err instanceof ApiError ? err.message : "Could not save the review.");
+    } finally {
+      setSavingEdit(false);
+    }
+  }
 
   // The author, or an admin, can take a review down (2026-09-26, feature inventory
   // #10). The reviewed org cannot; the API refuses it too.
@@ -115,8 +136,60 @@ export function ReviewsSection({ orgId, opportunityId }: { orgId: string; opport
               {"★".repeat(r.rating)}
               {"☆".repeat(5 - r.rating)} · {r.author_name}
             </p>
-            {r.text && <p className="progress-label" style={{ marginTop: 4 }}>{r.text}</p>}
+            {editingId === r.id ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 6 }}>
+                <select
+                  className="fsel"
+                  style={{ width: 140 }}
+                  aria-label="Rating"
+                  value={editRating}
+                  onChange={(e) => setEditRating(Number(e.target.value))}
+                >
+                  {[5, 4, 3, 2, 1].map((n) => (
+                    <option key={n} value={n}>
+                      {n} star{n > 1 ? "s" : ""}
+                    </option>
+                  ))}
+                </select>
+                <textarea
+                  className="fsel"
+                  style={{ width: "100%", resize: "vertical", cursor: "text" }}
+                  aria-label="Review text"
+                  maxLength={2000}
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  rows={2}
+                />
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button
+                    className="btn-p"
+                    style={{ padding: "4px 10px", fontSize: ".72rem" }}
+                    disabled={savingEdit}
+                    onClick={() => onSaveEdit(r.id)}
+                  >{savingEdit ? "Saving…" : "Save"}</button>
+                  <button
+                    className="btn-s"
+                    style={{ padding: "4px 10px", fontSize: ".72rem" }}
+                    disabled={savingEdit}
+                    onClick={() => setEditingId(null)}
+                  >Cancel</button>
+                </div>
+              </div>
+            ) : (
+              r.text && <p className="progress-label" style={{ marginTop: 4 }}>{r.text}</p>
+            )}
             <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 6, fontSize: ".72rem" }}>
+              {r.mine && editingId !== r.id && (
+                <button
+                  className="btn-s"
+                  style={{ padding: "4px 10px", fontSize: ".72rem" }}
+                  onClick={() => {
+                    setEditRating(r.rating);
+                    setEditText(r.text);
+                    setEditingId(r.id);
+                  }}
+                >Edit my review</button>
+              )}
               {(r.mine || user?.is_admin) && (
                 <button
                   className="btn-s"
@@ -134,7 +207,7 @@ export function ReviewsSection({ orgId, opportunityId }: { orgId: string; opport
             </div>
           </div>
         ))}
-        {deleteError && <p className="ferr" style={{ marginBottom: 0 }}>{deleteError}</p>}
+        {deleteError && <p className="ferr" role="alert" style={{ marginBottom: 0 }}>{deleteError}</p>}
 
         {user?.role === "student" && !consentGated(user) && (
           <form
@@ -165,7 +238,7 @@ export function ReviewsSection({ orgId, opportunityId }: { orgId: string; opport
               rows={2}
               placeholder="Share your experience (optional)"
             />
-            {submitError && <p className="ferr" style={{ marginBottom: 0 }}>{submitError}</p>}
+            {submitError && <p className="ferr" role="alert" style={{ marginBottom: 0 }}>{submitError}</p>}
             <button
               className="btn-p"
               type="submit"

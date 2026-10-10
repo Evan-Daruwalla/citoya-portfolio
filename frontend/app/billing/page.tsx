@@ -86,7 +86,7 @@ function BillingInner() {
               while Citoya launches. Free covers up to 3 active listings.
             </p>
           )}
-          {error && <p className="text-destructive">{error}</p>}
+          {error && <p className="text-destructive" role="alert">{error}</p>}
         </CardContent>
       </Card>
     </main>

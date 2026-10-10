@@ -171,6 +171,15 @@ export default function OpportunityDetailPage() {
             </div>
           </div>
 
+          {/* Decision 13A (2026-10-09): the owner edits a listing on the posting form. */}
+          {user?.role === "org" && user.id === opp.org_id && (
+            <div style={{ marginTop: 16 }}>
+              <Link className="btn-s" href={`/opportunities/new?edit=${encodeURIComponent(opp.id)}`} style={{ padding: "9px 18px", fontSize: ".83rem", textDecoration: "none" }}>
+                Edit listing
+              </Link>
+            </div>
+          )}
+
           {user?.role === "org" && user.id === opp.org_id && (
             <div className="modal-card" style={{ marginTop: 16 }}>
               <div className="mbody" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>

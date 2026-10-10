@@ -48,11 +48,11 @@ export default function PricingPage() {
               <li>One-click hour verification</li>
               {/* Not built yet (audit DY Med 20; PRD M17, 2026-10-05). Remove the marker when
                   the item ships. */}
-              <li>Bulk hour verification <span style={{ color: "var(--muted)", fontSize: ".78em", marginLeft: 6 }}>Coming soon</span></li>
+              <li>Bulk hour verification</li>
               <li>Direct messaging with volunteers</li>
               <li>Volunteer roster CSV export</li>
               <li>Public organization page with reviews</li>
-              <li>Skill endorsements for students <span style={{ color: "var(--muted)", fontSize: ".78em", marginLeft: 6 }}>Coming soon</span></li>
+              <li>Skill endorsements for students</li>
             </ul>
             <div><Link className="btn-s" style={{ width: "100%", display: "block", textAlign: "center" }} href="/register">Start Free</Link></div>
           </div>

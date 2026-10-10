@@ -168,7 +168,7 @@ export function CalendarPanel() {
         <span><i className="cal-swatch personal" /> Your own events (only you see these)</span>
       </div>
       {calQ.error && (
-        <p className="ferr" style={{ marginTop: 12 }}>
+        <p className="ferr" role="alert" style={{ marginTop: 12 }}>
           Couldn&apos;t load this month.{" "}
           <button type="button" className="btn-s" style={{ padding: "4px 12px", fontSize: ".78rem" }} onClick={calQ.retry}>Retry</button>
         </p>
@@ -193,7 +193,7 @@ export function CalendarPanel() {
         </form>
       </div>
       {message && <p className="progress-label">{message}</p>}
-      {error && <p className="ferr">{error}</p>}
+      {error && <p className="ferr" role="alert">{error}</p>}
     </>
   );
 }

@@ -49,6 +49,10 @@ export default function OrgDashboardPage() {
   // Every key is held null until the user is an org, so a student never sends a
   // request the server would 403 anyway.
   const isOrg = user?.role === "org";
+  // GET /applications/org and the org side of GET /hours answer 403 until an admin approves
+  // the org (decision 3A, 2026-10-09), so those two stay held for an unapproved or rejected
+  // org: the OrgReviewBanner explains why, and no error block appears for the lists.
+  const isApprovedOrg = isOrg && user?.is_approved === true;
   const {
     data: orgStats,
     error: orgStatsError,
@@ -56,14 +60,20 @@ export default function OrgDashboardPage() {
     retry: retryOrgStats,
   } = useAuthedQuery(isOrg ? "analytics/org" : null, (t) => api.orgAnalytics(t));
   const oppsQ = useAuthedQuery(isOrg ? "opportunities/mine" : null, (t) => api.myOpportunities(t));
-  const appsQ = useAuthedQuery(isOrg ? "applications/org" : null, (t) => api.orgApplications(t));
+  const appsQ = useAuthedQuery(isApprovedOrg ? "applications/org" : null, (t) => api.orgApplications(t));
   // `hours/org-queue`, NOT a new spelling: /verify-hours already reads this exact
   // data under that key with the same fetcher (verify-hours/page.tsx). `GET /hours`
   // branches on role, so the org queue and a student's own ledger are different
   // answers and correctly hold different keys — but there must not be a third.
   // Sharing it means this page's `verify()` and that page's decisions now see one
   // cache entry instead of two that drift.
-  const hoursQ = useAuthedQuery(isOrg ? "hours/org-queue" : null, (t) => api.listHours(t));
+  const hoursQ = useAuthedQuery(isApprovedOrg ? "hours/org-queue" : null, (t) => api.listHours(t));
+  // Skill endorsements (PRD M17.3, 2026-10-09): the skill list is the listing's own, so an
+  // org writes no free text about a student. `given` greys out skills already endorsed.
+  const { data: givenData, mutate: mutateGiven } = useAuthedQuery(isApprovedOrg ? "endorsements/given" : null, (t) =>
+    api.givenEndorsements(t),
+  );
+  const endorsedKeys = useMemo(() => new Set((givenData ?? []).map((e) => `${e.student_id}|${e.skill}`)), [givenData]);
   // Memoized because `activeOpps`/`historyOpps` below memo over `opps`; a fresh []
   // each render would make their deps change every time (the lint warning the
   // dashboard conversion hit).
@@ -104,6 +114,10 @@ export default function OrgDashboardPage() {
   // Deny is two steps here too, as on /verify-hours (2026-10-08, the named gap from audit DY Low 33).
   const [denyingId, setDenyingId] = useState<string | null>(null);
   const [denyNote, setDenyNote] = useState("");
+
+  // Endorse controls, keyed by hours id: the picked skill and the "Endorsed: ..." line.
+  const [endorsePick, setEndorsePick] = useState<Record<string, string>>({});
+  const [endorsedNote, setEndorsedNote] = useState<Record<string, string>>({});
 
   // Re-read all three. Every caller is a WRITE that can move more than one of them:
   // approving an application changes the roster AND the listing's spots, and
@@ -149,6 +163,22 @@ export default function OrgDashboardPage() {
     try {
       await api.decideApplication(id, action, token);
       refresh();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Something went wrong.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function endorse(hoursId: string, studentId: string, skill: string) {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
+    setBusyId(hoursId);
+    setError(null);
+    try {
+      await api.endorse(studentId, skill, token);
+      setEndorsedNote((m) => ({ ...m, [hoursId]: skill }));
+      void mutateGiven();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong.");
     } finally {
@@ -301,7 +331,7 @@ export default function OrgDashboardPage() {
   const loadErrorPanel = (
     <div className="load-error">
       <div className="empty-icon"><TriangleAlert size={40} strokeWidth={1.75} aria-hidden /></div>
-      <div className="ferr">Couldn&apos;t load your data. Check your connection and try again.</div>
+      <div className="ferr" role="alert">Couldn&apos;t load your data. Check your connection and try again.</div>
       <div>
         <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={refresh}>
           Retry
@@ -434,7 +464,7 @@ export default function OrgDashboardPage() {
           {/* Above every tab, not just My Listings: an org sitting on the Applicants
               tab wondering where its volunteers are needs the same answer. */}
           <OrgReviewBanner />
-          {error && <div className="ferr" style={{ display: "block" }}>{error}</div>}
+          {error && <div className="ferr" role="alert" style={{ display: "block" }}>{error}</div>}
 
           {tab === "listings" && (
             <div className="tab-panel on">
@@ -466,7 +496,7 @@ export default function OrgDashboardPage() {
               {orgStatsError ? (
                 <div className="load-error">
                   <div className="empty-icon"><TriangleAlert size={40} strokeWidth={1.75} aria-hidden /></div>
-                  <div className="ferr">Couldn&apos;t load your analytics. Check your connection and try again.</div>
+                  <div className="ferr" role="alert">Couldn&apos;t load your analytics. Check your connection and try again.</div>
                   <div><button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={retryOrgStats}>Retry</button></div>
                 </div>
               ) : orgStatsLoading || !orgStats ? (
@@ -574,10 +604,10 @@ export default function OrgDashboardPage() {
                   </select>
                 </div>
                 <div className="fr">
-                  <textarea className="fc" style={{ minHeight: 70 }} value={msgBody} onChange={(e) => setMsgBody(e.target.value)} placeholder="Send an update to your volunteers…" />
+                  <textarea className="fc" aria-label="Message to send" style={{ minHeight: 70 }} value={msgBody} onChange={(e) => setMsgBody(e.target.value)} placeholder="Send an update to your volunteers…" />
                 </div>
                 <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                  <select className="fc" style={{ width: "auto" }} value={msgAudience} onChange={(e) => setMsgAudience(e.target.value as Audience)}>
+                  <select className="fc" aria-label="Who receives this message" style={{ width: "auto" }} value={msgAudience} onChange={(e) => setMsgAudience(e.target.value as Audience)}>
                     <option value="all">All applicants</option>
                     <option value="approved">Approved only</option>
                     <option value="pending">Pending only</option>
@@ -641,7 +671,35 @@ export default function OrgDashboardPage() {
                             <button className="btn-approve" disabled={busyId === h.id} onClick={() => verify(h.id, "approve")}>✓ Verify</button>
                             <button className="btn-reject" disabled={busyId === h.id || denyingId === h.id} onClick={() => { setDenyingId(h.id); setDenyNote(""); }}>✕ Deny</button>
                           </div>
-                        )}</td>
+                        )}
+                        {h.status === "verified" && h.opportunity && h.opportunity.skills.length > 0 && (() => {
+                          const skills = h.opportunity.skills;
+                          const open = skills.filter((sk) => !endorsedKeys.has(`${h.user_id}|${sk}`));
+                          const pick = endorsePick[h.id] && open.includes(endorsePick[h.id]) ? endorsePick[h.id] : (open[0] ?? skills[0]);
+                          return (
+                            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                              <select
+                                className="fc"
+                                aria-label={`Skill to endorse for ${h.student_name ?? "this student"}`}
+                                value={pick}
+                                onChange={(e) => setEndorsePick((m) => ({ ...m, [h.id]: e.target.value }))}
+                                style={{ width: "auto" }}
+                              >
+                                {skills.map((sk) => (
+                                  <option key={sk} value={sk} disabled={endorsedKeys.has(`${h.user_id}|${sk}`)}>{sk}</option>
+                                ))}
+                              </select>
+                              <button
+                                className="btn-s"
+                                disabled={busyId === h.id || open.length === 0}
+                                onClick={() => endorse(h.id, h.user_id, pick)}
+                              >
+                                Endorse
+                              </button>
+                              {endorsedNote[h.id] && <span style={{ fontSize: ".78rem", color: "var(--muted)" }}>Endorsed: {endorsedNote[h.id]}</span>}
+                            </div>
+                          );
+                        })()}</td>
                       </tr>
                       {denyingId === h.id && (
                         <tr>
@@ -707,7 +765,7 @@ export default function OrgDashboardPage() {
                 </div>
                 <button className="fsubmit" onClick={saveProfile}>Save Changes</button>
                 {savedProfile && <span style={{ marginLeft: 12, fontSize: ".82rem", color: "var(--green)" }}>Saved ✓</span>}
-                {profileError && <div className="ferr" style={{ display: "block", marginTop: 10 }}>{profileError}</div>}
+                {profileError && <div className="ferr" role="alert" style={{ display: "block", marginTop: 10 }}>{profileError}</div>}
                 <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--border)", display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <Link className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} href="/billing">Manage Billing</Link>
                   <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={downloadExport}><Download size={15} strokeWidth={1.75} aria-hidden /> Download my data (JSON)</button>
@@ -737,7 +795,7 @@ export default function OrgDashboardPage() {
                     <label htmlFor="applicants-delete-password">Current password</label>
                     <input id="applicants-delete-password" className="fc" type="password" value={delPassword} onChange={(e) => setDelPassword(e.target.value)} />
                   </div>
-                  {deleteError && <div className="ferr" style={{ display: "block" }}>{deleteError}</div>}
+                  {deleteError && <div className="ferr" role="alert" style={{ display: "block" }}>{deleteError}</div>}
                   <button
                     className="btn-s"
                     style={{ color: "var(--red)", borderColor: "var(--red)", padding: "9px 18px", fontSize: ".83rem" }}

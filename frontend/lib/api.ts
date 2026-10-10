@@ -11,12 +11,15 @@ import type {
   AdminOrg,
   Application,
   ApplicationWithOpportunity,
+  AuditLogEntry,
   CalendarItem,
   ConsentContext,
   ConsentOverdue,
   ConsentManageContext,
+  Endorsement,
   Goal,
   Hours,
+  HoursBulkVerifyResponse,
   HoursWithOpportunity,
   LeaderboardEntry,
   Message,
@@ -26,6 +29,7 @@ import type {
   Opportunity,
   OpportunityCreateInput,
   OpportunityTemplate,
+  OpportunityUpdateInput,
   OrgReviews,
   PublicOrg,
   PersonalEventInput,
@@ -126,7 +130,10 @@ export const api = {
   // Server-side logout: invalidates the token (bumps token_version). Best-effort
   // from the client — auth-context clears localStorage regardless of the result.
   logout: (token: string) => request<void>("/auth/logout", { method: "POST", token }),
-  updateMe: (token: string, input: { email_notifications?: boolean; portfolio_public?: boolean }) =>
+  updateMe: (
+    token: string,
+    input: { email_notifications?: boolean; portfolio_public?: boolean; public_name_visible?: boolean },
+  ) =>
     request<User>("/auth/me", { method: "PATCH", body: JSON.stringify(input), token }),
 
   // Data export + account deletion (M13.3)
@@ -228,6 +235,16 @@ export const api = {
   createOpportunity: (input: OpportunityCreateInput, token: string) =>
     request<Opportunity>("/opportunities", { method: "POST", body: JSON.stringify(input), token }),
 
+  // Owner edit (decision 13A, 2026-10-09). Send only the fields that changed: the logistics
+  // fields (times, zone, spots, location, ...) 409 while anyone is signed up, even when the
+  // value sent equals the stored one.
+  updateOpportunity: (id: string, patch: OpportunityUpdateInput, token: string) =>
+    request<Opportunity>(`/opportunities/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+      token,
+    }),
+
   apply: (
     opportunityId: string,
     token: string,
@@ -286,6 +303,13 @@ export const api = {
     request<HoursWithOpportunity>(`/hours/${encodeURIComponent(hoursId)}/verify`, {
       method: "PATCH",
       body: JSON.stringify({ action, note }),
+      token,
+    }),
+
+  verifyHoursBulk: (ids: string[], token: string) =>
+    request<HoursBulkVerifyResponse>("/hours/verify-bulk", {
+      method: "POST",
+      body: JSON.stringify({ ids }),
       token,
     }),
 
@@ -390,6 +414,8 @@ export const api = {
     request<OrgReviews>(`/orgs/${encodeURIComponent(orgId)}/reviews`, { token }),
   deleteReview: (orgId: string, reviewId: string, token: string) =>
     request<void>(`/orgs/${encodeURIComponent(orgId)}/reviews/${encodeURIComponent(reviewId)}`, { method: "DELETE", token }),
+  updateReview: (orgId: string, reviewId: string, input: { rating?: number; text?: string }, token: string) =>
+    request<Review>(`/orgs/${encodeURIComponent(orgId)}/reviews/${encodeURIComponent(reviewId)}`, { method: "PATCH", body: JSON.stringify(input), token }),
   createReview: (orgId: string, input: { rating: number; text: string }, token: string) =>
     request<Review>(`/orgs/${encodeURIComponent(orgId)}/reviews`, { method: "POST", body: JSON.stringify(input), token }),
 
@@ -448,6 +474,9 @@ export const api = {
       token,
     }),
 
+  deleteTemplate: (id: string, token: string) =>
+    request<void>(`/opportunity-templates/${encodeURIComponent(id)}`, { method: "DELETE", token }),
+
   // ── Billing (M8) ──
   createCheckout: (token: string) =>
     request<{ url: string }>("/billing/checkout", { method: "POST", token }),
@@ -484,4 +513,21 @@ export const api = {
   rejectOrg: (orgId: string, token: string) =>
     request<AdminOrg>(`/admin/orgs/${encodeURIComponent(orgId)}/reject`, { method: "POST", token }),
   consentOverdue: (token: string) => request<ConsentOverdue>("/admin/consent/overdue", { token }),
+  // Audit log screen and consent reopen (PRD possible feature #11, 2026-10-09).
+  auditLog: (limit: number, offset: number, token: string) =>
+    request<AuditLogEntry[]>(`/audit-log?limit=${limit}&offset=${offset}`, { token }),
+  reopenConsent: (userId: string, token: string) =>
+    request<{ message: string }>(`/consent/admin/${encodeURIComponent(userId)}/reopen`, { method: "POST", token }),
+
+  // ── Skill endorsements (PRD M17.3, 2026-10-09) ──
+  endorse: (studentId: string, skill: string, token: string) =>
+    request<Endorsement>("/endorsements", {
+      method: "POST",
+      body: JSON.stringify({ student_id: studentId, skill }),
+      token,
+    }),
+  myEndorsements: (token: string) => request<Endorsement[]>("/endorsements/mine", { token }),
+  givenEndorsements: (token: string) => request<Endorsement[]>("/endorsements/given", { token }),
+  deleteEndorsement: (id: string, token: string) =>
+    request<void>(`/endorsements/${encodeURIComponent(id)}`, { method: "DELETE", token }),
 };

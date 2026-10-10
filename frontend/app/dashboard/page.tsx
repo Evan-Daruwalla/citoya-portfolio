@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, CalendarDays, ChartColumn, ClipboardList, Clock, Download, Lock, MapPin, Plus, Settings, Target, TriangleAlert, User, type LucideIcon } from "lucide-react";
+import { Bookmark, CalendarDays, ChartColumn, ClipboardList, Clock, Download, MapPin, Plus, Settings, Target, TriangleAlert, User, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
@@ -47,6 +47,11 @@ export default function DashboardPage() {
   const goalsQ = useAuthedQuery(isStudent ? "goals" : null, (t) => api.listGoals(t));
   const appsQ = useAuthedQuery(isStudent ? "applications/my" : null, (t) => api.myApplications(t));
   const savedQ = useAuthedQuery(isStudent ? "saved" : null, (t) => api.listSaved(t));
+  // Skill endorsements (PRD M17.3, 2026-10-09): its own query and error line, so a failure here
+  // never blanks the stats above it.
+  const endorsementsQ = useAuthedQuery(isStudent ? "endorsements/mine" : null, (t) => api.myEndorsements(t));
+  const [endorseError, setEndorseError] = useState<string | null>(null);
+  const [removingEndorsement, setRemovingEndorsement] = useState<string | null>(null);
   // Memoized only to keep the `stats` useMemo below off a fresh [] each render.
   const hours = useMemo(() => hoursQ.data ?? [], [hoursQ.data]);
   const apps = appsQ.data ?? [];
@@ -114,6 +119,21 @@ export default function DashboardPage() {
   // application is not impact.
   const approvedApps = apps.filter((a) => a.status === "approved");
   const oppOptions = approvedApps.map((a) => ({ id: a.opportunity.id, title: a.opportunity.title }));
+
+  async function removeEndorsement(id: string) {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
+    setRemovingEndorsement(id);
+    setEndorseError(null);
+    try {
+      await api.deleteEndorsement(id, token);
+      await endorsementsQ.mutate();
+    } catch (err) {
+      setEndorseError(err instanceof ApiError ? err.message : "Something went wrong.");
+    } finally {
+      setRemovingEndorsement(null);
+    }
+  }
 
   async function submitSelfReport(e: FormEvent) {
     e.preventDefault();
@@ -200,7 +220,7 @@ export default function DashboardPage() {
   const sectionError = (
     <div className="load-error">
       <div className="empty-icon"><TriangleAlert size={40} strokeWidth={1.75} aria-hidden /></div>
-      <div className="ferr">Couldn&apos;t load your data. Check your connection and try again.</div>
+      <div className="ferr" role="alert">Couldn&apos;t load your data. Check your connection and try again.</div>
       <div>
         <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={refresh}>
           Retry
@@ -373,7 +393,7 @@ export default function DashboardPage() {
                     </form>
                   </div>
                   {offsite.message && <p className="progress-label">{offsite.message}</p>}
-                  {offsite.error && <p className="ferr">{offsite.error}</p>}
+                  {offsite.error && <p className="ferr" role="alert">{offsite.error}</p>}
                 </>
               )}
             </div>
@@ -417,6 +437,32 @@ export default function DashboardPage() {
                 <div className="lb-stat"><div className="lb-stat-num">{goalRows.completed.length}</div><div className="lb-stat-label">Goals Met</div></div>
               </div>
               )}
+              <h2 className="goal-section">Skill endorsements</h2>
+              <p style={{ fontSize: ".83rem", color: "var(--muted)", fontWeight: 300, marginBottom: 12 }}>Endorsements show on your public portfolio when it is public.</p>
+              {endorsementsQ.error ? (
+                <div className="load-error">
+                  <div className="ferr" role="alert">Couldn&apos;t load your endorsements. Check your connection and try again.</div>
+                  <div>
+                    <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={endorsementsQ.retry}>
+                      Retry
+                    </button>
+                  </div>
+                </div>
+              ) : endorsementsQ.loading || !endorsementsQ.data ? (
+                <p style={{ fontSize: ".83rem", color: "var(--muted)" }} aria-busy="true">Loading endorsements...</p>
+              ) : endorsementsQ.data.length === 0 ? (
+                <div className="empty">No endorsements yet. An organization can endorse a skill after verifying your hours.</div>
+              ) : (
+                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                  {endorsementsQ.data.map((e) => (
+                    <li key={e.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "6px 0" }}>
+                      <span>{e.skill} - {e.org_name}</span>
+                      <button className="btn-s" disabled={removingEndorsement === e.id} onClick={() => removeEndorsement(e.id)}>Remove</button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {endorseError && <div className="ferr" role="alert">{endorseError}</div>}
             </div>
           )}
 
@@ -456,7 +502,7 @@ export default function DashboardPage() {
                   <label htmlFor="dashboard-delete-password">Current password</label>
                   <input id="dashboard-delete-password" className="fc" type="password" value={delPassword} onChange={(e) => setDelPassword(e.target.value)} />
                 </div>
-                {acctError && <div className="ferr" style={{ display: "block" }}>{acctError}</div>}
+                {acctError && <div className="ferr" role="alert" style={{ display: "block" }}>{acctError}</div>}
                 <button
                   className="btn-s"
                   style={{ color: "var(--red)", borderColor: "var(--red)", padding: "9px 18px", fontSize: ".83rem" }}

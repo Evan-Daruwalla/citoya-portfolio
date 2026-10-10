@@ -11,7 +11,6 @@ import { api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { daysUntilEventDate, eventInstant, fmtEventDate } from "@/lib/event-time";
 import { useAuthedQuery, usePublicQuery } from "@/lib/use-api";
-import type { Opportunity } from "@/lib/types";
 
 const CATEGORIES = ["Education", "Environment", "Health", "Animals", "Food & Hunger", "Arts & Culture", "Community", "STEM", "Agriculture"];
 const COMMITMENT: Record<string, string> = { one_time: "One-time", weekly: "Weekly", monthly: "Monthly" };
@@ -218,7 +217,7 @@ export default function DiscoverPage() {
         ) : error ? (
           <div className="load-error">
             <div className="empty-icon"><TriangleAlert size={40} strokeWidth={1.75} aria-hidden /></div>
-            <div className="ferr">Couldn&apos;t load opportunities. Check your connection and try again.</div>
+            <div className="ferr" role="alert">Couldn&apos;t load opportunities. Check your connection and try again.</div>
             <div>
               <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={loadOpps}>
                 Retry

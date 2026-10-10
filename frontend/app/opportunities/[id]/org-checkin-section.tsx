@@ -104,7 +104,7 @@ export function OrgCheckinSection({ opp }: { opp: Opportunity }) {
           </div>
         ) : loadError ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
-            <p className="ferr" style={{ marginBottom: 0 }}>
+            <p className="ferr" role="alert" style={{ marginBottom: 0 }}>
               {loadError instanceof ApiError && loadError.status >= 400 && loadError.status < 500
                 ? loadError.message
                 : "Couldn't load this listing's dates."}
@@ -134,7 +134,7 @@ export function OrgCheckinSection({ opp }: { opp: Opportunity }) {
             </span>
           </p>
         )}
-        {submitError && <p className="ferr" style={{ marginBottom: 0 }}>{submitError}</p>}
+        {submitError && <p className="ferr" role="alert" style={{ marginBottom: 0 }}>{submitError}</p>}
       </div>
     </div>
   );

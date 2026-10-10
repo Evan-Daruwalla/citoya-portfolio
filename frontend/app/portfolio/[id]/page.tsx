@@ -84,8 +84,8 @@ export default function PublicPortfolioPage() {
           <h4 style={{ fontSize: ".92rem", color: "var(--dark)", marginBottom: 10 }}>Hours by Organization</h4>
           <table className="tbl" style={{ fontSize: ".85rem" }}>
             <tbody>
-              {pf.hours_by_org.length ? pf.hours_by_org.map((o) => (
-                <tr key={o.org_name}>
+              {pf.hours_by_org.length ? pf.hours_by_org.map((o, i) => (
+                <tr key={`${o.org_name}|${i}`}>
                   <td style={{ fontWeight: 500 }}>{o.org_name}</td>
                   <td style={{ textAlign: "right", fontWeight: 600, color: "var(--green)" }}>{o.hours} hrs</td>
                 </tr>
@@ -106,6 +106,21 @@ export default function PublicPortfolioPage() {
             )}
           </div>
         </div>
+
+        {pf.endorsements.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <h4 style={{ fontSize: ".92rem", color: "var(--dark)", marginBottom: 10 }}>Skill endorsements</h4>
+            <table className="tbl" style={{ fontSize: ".85rem" }}>
+              <tbody>
+                {pf.endorsements.map((e) => (
+                  <tr key={`${e.org_name}|${e.skill}`}>
+                    <td style={{ fontWeight: 500 }}>{e.skill} - {e.org_name}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 20 }}>
           <button className="btn-s" style={{ padding: "10px 20px" }} onClick={() => window.print()}><Printer size={15} strokeWidth={1.75} aria-hidden /> Print</button>

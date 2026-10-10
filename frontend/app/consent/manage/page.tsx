@@ -113,7 +113,7 @@ export default function ConsentManagePage() {
                 {ctx.student_last_initial ? "" : "."} Current status:{" "}
                 <span className="font-medium">{ctx.status}</span>.
               </p>
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
               {ctx.status === "revoked" ? (
                 <p className="text-sm text-muted-foreground">You&apos;ve already revoked approval.</p>
               ) : !confirming ? (
@@ -132,7 +132,7 @@ export default function ConsentManagePage() {
               )}
             </>
           ) : error ? (
-            <p className="text-sm text-destructive">{error}</p>
+            <p className="text-sm text-destructive" role="alert">{error}</p>
           ) : (
             <p className="text-sm text-muted-foreground">Loading…</p>
           )}

@@ -4,9 +4,9 @@
  * The applicant identity cell on the two org-facing tables, greyed when the
  * account can no longer take part (Evan, 2026-08-11).
  *
- * The row and the identity are KEPT rather than hidden: this is the
- * organization's own record of who signed up, and deleting it from their view
- * would destroy that. So the student is marked, not removed.
+ * The row is KEPT rather than hidden: it is the organization's own record of who
+ * signed up. Since 2026-10-09 (Evan's decision 4A) the backend sends "Inactive
+ * student" and no email for such a row, so the identity itself is not kept.
  *
  * The hint deliberately does not say WHY. The backend collapses "deleted",
  * "deactivated" and "guardian revoked consent" into one boolean for the same

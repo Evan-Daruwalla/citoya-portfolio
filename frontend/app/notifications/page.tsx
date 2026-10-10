@@ -9,7 +9,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ApiError, api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { useAuthedQuery } from "@/lib/use-api";
-import type { Notification } from "@/lib/types";
 
 // A notification link is only followed when it is a same-site path (audit DY Low 37,
 // 2026-10-07). "//host" and a "/" followed by a backslash are protocol-relative to a browser, so

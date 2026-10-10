@@ -38,6 +38,8 @@ export function SignupSection({ opp, onChange }: { opp: Opportunity; onChange: (
   // split `reviews-section` and the parent page already make.
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [confirmingWithdraw, setConfirmingWithdraw] = useState(false);
+  const [skipBusy, setSkipBusy] = useState<string | null>(null);
   // L9 (2026-09-22): this section never knew the student had ALREADY applied, so it
   // offered Apply again and the click came back 409 "Already applied". Same key the
   // hours page reads, so both see one list.
@@ -45,7 +47,8 @@ export function SignupSection({ opp, onChange }: { opp: Opportunity; onChange: (
     "applications/my",
     (t) => api.myApplications(t),
   );
-  const shown = status ?? myApps?.find((a) => a.opportunity_id === opp.id)?.status ?? null;
+  const myApp = myApps?.find((a) => a.opportunity_id === opp.id) ?? null;
+  const shown = status ?? myApp?.status ?? null;
 
   async function apply() {
     const token = localStorage.getItem(TOKEN_KEY);
@@ -67,8 +70,105 @@ export function SignupSection({ opp, onChange }: { opp: Opportunity; onChange: (
     }
   }
 
+  async function withdraw() {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
+    setSubmitError(null);
+    setSubmitting(true);
+    try {
+      await api.withdraw(opp.id, token);
+      setStatus(null);
+      setConfirmingWithdraw(false);
+      void mutateMyApps();
+      onChange();
+    } catch (err) {
+      setSubmitError(err instanceof ApiError ? err.message : "Something went wrong.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function toggleSkip(date: string, isSkipped: boolean) {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
+    setSubmitError(null);
+    setSkipBusy(date);
+    try {
+      await api.excludeDate(opp.id, date, isSkipped ? "include" : "exclude", token);
+      void mutateMyApps();
+    } catch (err) {
+      setSubmitError(err instanceof ApiError ? err.message : "Something went wrong.");
+    } finally {
+      setSkipBusy(null);
+    }
+  }
+
   if (shown) {
-    return <p className="progress-label" style={{ color: "var(--green)", fontWeight: 600 }}>{APPLICATION_STATUS_MESSAGE[shown] ?? shown}</p>;
+    const canWithdraw = shown === "pending" || shown === "approved" || shown === "waitlisted";
+    const upcoming = Object.keys(dateSpots ?? {}).slice(0, 10);
+    const canSkip =
+      recurring && myApp?.subscription_type === "all_dates" && shown === "approved" && upcoming.length > 0;
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-start" }}>
+        <p className="progress-label" style={{ color: "var(--green)", fontWeight: 600 }}>{APPLICATION_STATUS_MESSAGE[shown] ?? shown}</p>
+        {/* Withdraw and skip a date from the UI (PRD possible feature #6, 2026-10-09); the API existed since M2. */}
+        {canWithdraw &&
+          (confirmingWithdraw ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
+              <p className="progress-label" style={{ marginTop: 0 }}>
+                Withdraw from this opportunity? If you were approved, your spot goes to the next person on the waitlist.
+              </p>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn-p" type="button" onClick={withdraw} disabled={submitting}>
+                  Confirm withdraw
+                </button>
+                <button
+                  className="btn-s"
+                  type="button"
+                  onClick={() => setConfirmingWithdraw(false)}
+                  disabled={submitting}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              className="btn-s"
+              type="button"
+              onClick={() => setConfirmingWithdraw(true)}
+              disabled={submitting}
+              style={{ padding: "8px 16px", fontSize: ".8rem" }}
+            >
+              Withdraw
+            </button>
+          ))}
+        {canSkip && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-start" }}>
+            <p className="progress-label" style={{ marginTop: 0 }}>Skip a date you can&apos;t make:</p>
+            {upcoming.map((d) => {
+              const isSkipped = myApp.excluded_dates.includes(d);
+              return (
+                <div key={d} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: ".84rem" }}>
+                  <span>{fmtDateKey(d, DAY)}</span>
+                  {isSkipped && <span>Skipped</span>}
+                  <button
+                    className="btn-s"
+                    type="button"
+                    onClick={() => toggleSkip(d, isSkipped)}
+                    disabled={skipBusy !== null}
+                    style={{ padding: "8px 16px", fontSize: ".8rem" }}
+                  >
+                    {isSkipped ? "Undo skip" : "Skip"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {submitError && <p className="ferr" role="alert" style={{ marginBottom: 0 }}>{submitError}</p>}
+      </div>
+    );
   }
   // Not an Apply button until we know — offering it and then swapping it for a
   // status is the same wrong offer, just briefer.
@@ -83,7 +183,7 @@ export function SignupSection({ opp, onChange }: { opp: Opportunity; onChange: (
         <button className="btn-p" type="button" onClick={apply} disabled={submitting}>
           {submitting ? "Applying…" : full ? "Join waitlist" : "Apply"}
         </button>
-        {submitError && <p className="ferr" style={{ marginBottom: 0 }}>{submitError}</p>}
+        {submitError && <p className="ferr" role="alert" style={{ marginBottom: 0 }}>{submitError}</p>}
       </div>
     );
   }
@@ -116,7 +216,7 @@ export function SignupSection({ opp, onChange }: { opp: Opportunity; onChange: (
           missing, which is otherwise indistinguishable from a series with none. */}
       {loadError && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
-          <p className="ferr" style={{ marginBottom: 0 }}>
+          <p className="ferr" role="alert" style={{ marginBottom: 0 }}>
             {loadError instanceof ApiError && loadError.status >= 400 && loadError.status < 500
               ? loadError.message
               : "Couldn't load available dates. You can still subscribe to all dates."}
@@ -164,7 +264,7 @@ export function SignupSection({ opp, onChange }: { opp: Opportunity; onChange: (
       >
         {submitting ? "Applying…" : "Apply"}
       </button>
-      {submitError && <p className="ferr" style={{ marginBottom: 0 }}>{submitError}</p>}
+      {submitError && <p className="ferr" role="alert" style={{ marginBottom: 0 }}>{submitError}</p>}
       {dates.length > 0 && (
         <p className="progress-label">
           Upcoming dates: {dates.slice(0, 5).map((d) => `${fmtDateKey(d, DAY)} (${spots[d]} left)`).join(" · ")}
