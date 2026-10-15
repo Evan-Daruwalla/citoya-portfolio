@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 
 import { ReportConcern } from "@/components/report-concern";
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
+import { errorText } from "@/lib/errors";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { consentGated } from "@/lib/consent";
 import { canReadThread } from "@/lib/thread-access";
@@ -73,7 +74,7 @@ export function MessagesSection({
       // Say every refusal, never vanish. An owning org's only 403 here is "isn't
       // approved"; hiding the whole section on it left a pending org with no
       // explanation (found 2026-09-26). An applicant's 403 is usually the consent gate.
-      setSubmitError(err instanceof ApiError ? err.message : "Couldn't send your message.");
+      setSubmitError(errorText(err, "Could not send your message."));
     } finally {
       setSubmitting(false);
     }
@@ -88,12 +89,11 @@ export function MessagesSection({
           className="mbody"
           style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}
         >
-          <p className="progress-label" style={{ marginTop: 0 }}>Couldn&apos;t load messages.</p>
+          <p className="progress-label" style={{ marginTop: 0 }}>Could not load messages.</p>
           <button
-            className="btn-s"
+            className="btn-s btn-sm"
             type="button"
             onClick={retry}
-            style={{ padding: "9px 18px", fontSize: ".83rem" }}
           >
             Retry
           </button>
@@ -113,7 +113,7 @@ export function MessagesSection({
           </p>
         )}
         {messages.map((m) => (
-          <div key={m.id} style={{ fontSize: ".84rem", color: "var(--text)" }}>
+          <div key={m.id} style={{ fontSize: "var(--fs-label)", color: "var(--text)" }}>
             <span style={{ fontWeight: 600 }}>{m.sender_name}:</span> <span>{m.body}</span>
           </div>
         ))}
@@ -126,7 +126,7 @@ export function MessagesSection({
         {/* Without this the box was just greyed out, with nothing saying why (2026-09-26). */}
         {blocked && (
           <p className="progress-label" style={{ marginTop: 0 }}>
-            You can read messages, but you can&apos;t send one until a parent or guardian approves your account.
+            You can read messages, but you cannot send one until a parent or guardian approves your account.
           </p>
         )}
         <form
@@ -143,10 +143,9 @@ export function MessagesSection({
             aria-label={canPost ? "Message your volunteers" : "Private message to the organization"}
           />
           <button
-            className="btn-p"
+            className="btn-p btn-sm"
             type="submit"
             disabled={blocked || submitting || !body.trim()}
-            style={{ padding: "9px 18px", fontSize: ".83rem" }}
           >
             Send
           </button>

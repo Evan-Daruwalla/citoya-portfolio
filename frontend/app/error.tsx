@@ -47,12 +47,11 @@ export default function Error({
         <div className="empty-icon" style={{ marginBottom: 8 }}>
           <TriangleAlert size={40} strokeWidth={1.75} aria-hidden />
         </div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: "2rem", margin: "0 0 10px" }}>
-          Something went wrong
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-h1)", margin: "0 0 10px" }}>
+          This page did not load
         </h1>
         <p className="sec-sub" style={{ margin: "0 auto 26px" }}>
-          This page didn&apos;t load. Trying again usually works — nothing you saved has
-          been lost.
+          Trying again usually works. Nothing you saved has been lost.
         </p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
           <button className="btn-p" type="button" onClick={reset}>
@@ -63,7 +62,7 @@ export default function Error({
           </Link>
         </div>
         {error.digest ? (
-          <p style={{ marginTop: 22, fontSize: ".78rem", color: "var(--muted)" }}>
+          <p style={{ marginTop: 22, fontSize: "var(--fs-micro)", color: "var(--muted)" }}>
             Reference: {error.digest}
           </p>
         ) : null}

@@ -46,11 +46,11 @@ export const APPLICATION_STATUS_PILL: Record<string, string> = {
 
 // Used by: app/opportunities/[id]/signup-section.tsx (post-apply confirmation)
 export const APPLICATION_STATUS_MESSAGE: Record<string, string> = {
-  approved: "You're signed up!",
+  approved: "You are signed up!",
   pending: "Application submitted. Pending approval.",
-  waitlisted: "You're on the waitlist. We'll sign you up if a spot frees.",
+  waitlisted: "You are on the waitlist. We will sign you up if a spot frees.",
   // Shown on the listing page since L9 (2026-09-22); without it the raw word rendered.
-  rejected: "This application wasn't approved.",
+  rejected: "This application was not approved.",
   // A guardian's revoke withdraws the signup (M5). Says what happened without
   // pretending it can be undone here — restoring consent is the guardian's
   // action, and re-signing-up is blocked by `require_consent` until it is.

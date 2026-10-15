@@ -50,7 +50,7 @@ export interface HoursTotals {
   verified: number;
   pending: number; // pending + appealed: waiting on an organization
   offsite: number; // self-reported outside Citoya, never verified
-  total: number; // every listing-backed row, denied included (the sidebar's "Total Logged")
+  total: number; // every listing-backed row, denied included (the sidebar's "Total logged")
 }
 
 export function hoursTotals(rows: HoursRow[]): HoursTotals {

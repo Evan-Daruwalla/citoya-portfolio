@@ -26,10 +26,10 @@ export function OrgReviewBanner() {
       <div className="consent-zone">
         <h4>
           <TriangleAlert size={16} strokeWidth={1.75} aria-hidden />
-          Your organization wasn&apos;t approved
+          Your organization was not approved
         </h4>
         <p>
-          Students can&apos;t see your listings.{" "}
+          Students cannot see your listings.{" "}
           <ReportConcern subject="Organization review decision" label="Contact us if you think this is a mistake" />
         </p>
       </div>
@@ -43,7 +43,7 @@ export function OrgReviewBanner() {
     try {
       await refresh();
     } catch {
-      setMessage("Couldn't check your status. Try again.");
+      setMessage("Could not check your status. Try again.");
     }
   }
 
@@ -57,15 +57,15 @@ export function OrgReviewBanner() {
         Your organization is being reviewed
       </h4>
       <p>
-        Your listings are saved and you can see them here, but students can&apos;t see them yet.
+        Your listings are saved and you can see them here, but students cannot see them yet.
         {/* A TARGET, not a guarantee. "will be reviewed within 3 business days" is a
             promise nobody has committed to keeping (PRD_ROADMAP.md M15.1, Evan
             2026-09-20). The wording difference is the whole decision. */}
         {" "}We aim to review new organizations within 3 business days.
       </p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={recheck}>
-          I&apos;ve been approved. Refresh
+        <button className="btn-s btn-sm" onClick={recheck}>
+          I have been approved. Refresh
         </button>
       </div>
       {message && <p style={{ marginTop: 10, marginBottom: 0 }}>{message}</p>}

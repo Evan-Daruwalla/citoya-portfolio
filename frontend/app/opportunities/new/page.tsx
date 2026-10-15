@@ -1,5 +1,6 @@
 "use client";
 
+import { errorText } from "@/lib/errors";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, type FormEvent } from "react";
@@ -9,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { eventDateKey, eventInstant, viewerTimeZone } from "@/lib/event-time";
 import { useAuthedQuery } from "@/lib/use-api";
@@ -159,7 +160,7 @@ function OpportunityForm({ editId, initial }: { editId: string | null; initial: 
       setConfirmingTemplateDelete(false);
       await mutateTemplates();
     } catch (err) {
-      setTemplateDeleteError(err instanceof ApiError ? err.message : "Could not delete the template.");
+      setTemplateDeleteError(errorText(err, "Could not delete the template."));
     } finally {
       setDeletingTemplate(false);
     }
@@ -256,7 +257,7 @@ function OpportunityForm({ editId, initial }: { editId: string | null; initial: 
       }
       router.push(`/opportunities/${created.id}`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setError(errorText(err, "We could not save your listing. Check your connection and try again."));
     } finally {
       setSubmitting(false);
     }
@@ -279,7 +280,7 @@ function OpportunityForm({ editId, initial }: { editId: string | null; initial: 
           <CardTitle>{editId ? "Edit listing" : "Post an opportunity"}</CardTitle>
           <CardDescription>
             {editId
-              ? "Only the fields you change are saved. Times, location, spots and the other logistics can't change once a student has signed up."
+              ? "Only the fields you change are saved. Times, location, spots and the other logistics cannot change once a student has signed up."
               : "Reach students looking for community service."}
           </CardDescription>
         </CardHeader>
@@ -287,7 +288,7 @@ function OpportunityForm({ editId, initial }: { editId: string | null; initial: 
           <form onSubmit={onSubmit} className="flex flex-col gap-4">
             {!editId && templatesError && (
               <p className="text-sm text-muted-foreground">
-                Couldn&apos;t load your saved templates. You can still fill the form below.
+                Could not load your saved templates. You can still fill the form below.
               </p>
             )}
             {!editId && templates.length > 0 && (
@@ -552,7 +553,7 @@ function NewOpportunityInner() {
         <p className="text-muted-foreground">
           {listingError && listingError.status < 500
             ? listingError.message
-            : "Couldn't load this listing. Check your connection and try again."}
+            : "Could not load this listing. Check your connection and try again."}
         </p>
       </main>
     );

@@ -7,7 +7,8 @@
 import { CalendarPlus, Copy, RefreshCw, X } from "lucide-react";
 import { useState } from "react";
 
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
+import { errorText } from "@/lib/errors";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { CONSENT_GATED_COPY, consentGated } from "@/lib/consent";
 import { useAuthedQuery } from "@/lib/use-api";
@@ -36,7 +37,7 @@ export function CalendarFeed() {
       setUrls(api.calendarFeedUrls(r.token));
       void statusQ.mutate({ active: true }, { revalidate: false });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't create the link.");
+      setError(errorText(err, "Could not create the link."));
     } finally {
       setBusy(false);
     }
@@ -53,7 +54,7 @@ export function CalendarFeed() {
       setUrls(null);
       void statusQ.mutate({ active: false }, { revalidate: false });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't turn the link off.");
+      setError(errorText(err, "Could not turn the link off."));
     } finally {
       setBusy(false);
     }
@@ -65,7 +66,7 @@ export function CalendarFeed() {
       await navigator.clipboard.writeText(urls.https);
       setCopied(true);
     } catch {
-      setError("Couldn't copy. Select the link and copy it by hand.");
+      setError("Could not copy. Select the link and copy it by hand.");
     }
   }
 
@@ -74,7 +75,7 @@ export function CalendarFeed() {
       <h2 className="goal-section" style={{ marginTop: 0 }}>Add to your phone&apos;s calendar</h2>
       <p className="progress-label" style={{ marginTop: 0, marginBottom: 12 }}>
         A private link your calendar app checks for updates: your signups and your own events, with times and
-        addresses. <strong>Anyone who has the link can see them</strong>, so don&apos;t share it. You can reset it or
+        addresses. <strong>Anyone who has the link can see them</strong>, so do not share it. You can reset it or
         turn it off here at any time.
       </p>
       {gated && <p className="progress-label" style={{ marginTop: 0 }}>{CONSENT_GATED_COPY}</p>}
@@ -82,13 +83,13 @@ export function CalendarFeed() {
       {urls && (
         <>
           <div className="checkin-bar">
-            <a className="btn-p" href={urls.webcal} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", fontSize: ".82rem" }}>
+            <a className="btn-p" href={urls.webcal} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", fontSize: "var(--fs-label)" }}>
               <CalendarPlus size={14} strokeWidth={1.75} aria-hidden /> Add to Apple Calendar
             </a>
-            <a className="btn-s" href={urls.google} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", fontSize: ".82rem" }}>
+            <a className="btn-s" href={urls.google} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", fontSize: "var(--fs-label)" }}>
               <CalendarPlus size={14} strokeWidth={1.75} aria-hidden /> Add to Google Calendar
             </a>
-            <button type="button" className="btn-s" onClick={copy} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", fontSize: ".82rem" }}>
+            <button type="button" className="btn-s" onClick={copy} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", fontSize: "var(--fs-label)" }}>
               <Copy size={14} strokeWidth={1.75} aria-hidden /> {copied ? "Copied" : "Copy link"}
             </button>
           </div>
@@ -100,28 +101,28 @@ export function CalendarFeed() {
       )}
       {!urls && active && (
         <p className="progress-label" style={{ marginTop: 0 }}>
-          Your calendar link is on. For your privacy it can&apos;t be shown again: reset it to get a new one (the old
+          Your calendar link is on. For your privacy it cannot be shown again: reset it to get a new one (the old
           one stops working).
         </p>
       )}
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {!active ? (
-          <button type="button" className="btn-p" style={{ padding: "9px 18px", fontSize: ".82rem" }} disabled={busy || gated || statusQ.data === undefined} onClick={() => create(false)}>
+          <button type="button" className="btn-p btn-sm" disabled={busy || gated || statusQ.data === undefined} onClick={() => create(false)}>
             Create my calendar link
           </button>
         ) : (
           <>
-            <button type="button" className="btn-s" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", fontSize: ".8rem" }} disabled={busy || gated} onClick={() => create(true)}>
+            <button type="button" className="btn-s" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", fontSize: "var(--fs-label)" }} disabled={busy || gated} onClick={() => create(true)}>
               <RefreshCw size={13} strokeWidth={1.75} aria-hidden /> Reset link
             </button>
-            <button type="button" className="btn-s" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", fontSize: ".8rem" }} disabled={busy} onClick={turnOff}>
+            <button type="button" className="btn-s" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", fontSize: "var(--fs-label)" }} disabled={busy} onClick={turnOff}>
               <X size={13} strokeWidth={1.75} aria-hidden /> Turn off
             </button>
           </>
         )}
       </div>
-      {statusQ.error && <p className="ferr" role="alert" style={{ marginTop: 12 }}>Couldn&apos;t check your calendar link.</p>}
+      {statusQ.error && <p className="ferr" role="alert" style={{ marginTop: 12 }}>Could not check your calendar link.</p>}
       {error && <p className="ferr" role="alert" style={{ marginTop: 12 }}>{error}</p>}
     </div>
   );

@@ -15,11 +15,11 @@ export default function NotFound() {
   return (
     <div className="v1">
       <div className="section" style={{ textAlign: "center", maxWidth: 560 }}>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: "2rem", margin: "0 0 10px" }}>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-h1)", margin: "0 0 10px" }}>
           Page not found
         </h1>
         <p className="sec-sub" style={{ margin: "0 auto 26px" }}>
-          That link doesn&apos;t point anywhere. It may have been removed, or the address
+          That link does not point anywhere. It may have been removed, or the address
           may have a typo in it.
         </p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>

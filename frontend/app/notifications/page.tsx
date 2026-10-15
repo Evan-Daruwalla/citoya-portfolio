@@ -6,7 +6,8 @@ import { useSWRConfig } from "swr";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
+import { errorText } from "@/lib/errors";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { useAuthedQuery } from "@/lib/use-api";
 
@@ -66,7 +67,7 @@ export default function NotificationsPage() {
       void mutate();
       void mutateKey("notifications/unread-count");
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't update your notifications. Try again.");
+      setActionError(errorText(err, "Could not update your notifications. Try again."));
     }
   }
 
@@ -79,7 +80,7 @@ export default function NotificationsPage() {
       void mutate();
       void mutateKey("notifications/unread-count");
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't update your notifications. Try again.");
+      setActionError(errorText(err, "Could not update your notifications. Try again."));
     }
   }
 
@@ -140,7 +141,7 @@ export default function NotificationsPage() {
       {!fetching && error && (
         <div className="flex flex-col items-start gap-2">
           <p className="text-muted-foreground">
-            Couldn&apos;t load your notifications. Check your connection and try again.
+            Could not load your notifications. Check your connection and try again.
           </p>
           <Button variant="outline" size="sm" onClick={retry}>Retry</Button>
         </div>

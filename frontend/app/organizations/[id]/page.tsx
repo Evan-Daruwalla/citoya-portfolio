@@ -43,7 +43,7 @@ export default function OrganizationPage() {
   return (
     <V1Shell>
       <Link href="/discover" className="back-link">
-        ← Back to Opportunities
+        ← Back to opportunities
       </Link>
 
       {loading && (
@@ -62,7 +62,7 @@ export default function OrganizationPage() {
         <div className="detail-wrap">
           <div className="empty">
             <div className="empty-icon"><WifiOff size={40} strokeWidth={1.75} aria-hidden /></div>
-            Couldn&apos;t load this organization. Check your connection and try again.
+            Could not load this organization. Check your connection and try again.
             <div style={{ marginTop: 14 }}>
               <button className="btn-s" onClick={retry}>Retry</button>
             </div>
@@ -80,7 +80,7 @@ export default function OrganizationPage() {
           )}
           {!oppsLoading && oppsError && (
             <div className="empty">
-              Couldn&apos;t load this organization&apos;s opportunities.
+              Could not load this organization&apos;s opportunities.
               <div style={{ marginTop: 14 }}>
                 <button className="btn-s" onClick={retryOpps}>Retry</button>
               </div>

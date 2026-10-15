@@ -31,7 +31,7 @@ export function StudentCell({
         {email && (
           <>
             <br />
-            <span style={{ fontSize: ".75rem", color: "var(--muted)" }}>{email}</span>
+            <span style={{ fontSize: "var(--fs-micro)", color: "var(--c-muted)" }}>{email}</span>
           </>
         )}
       </>
@@ -47,7 +47,7 @@ export function StudentCell({
       {email && (
         <>
           <br />
-          <span style={{ fontSize: ".75rem", color: "var(--muted)", textDecoration: "line-through" }}>
+          <span style={{ fontSize: "var(--fs-micro)", color: "var(--c-muted)", textDecoration: "line-through" }}>
             {email}
           </span>
         </>

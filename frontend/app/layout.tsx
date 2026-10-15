@@ -3,6 +3,7 @@ import { DM_Sans, Fraunces } from "next/font/google";
 import "./globals.css";
 import "./v1.css";
 import { AuthProvider } from "@/lib/auth-context";
+import { SWRProvider } from "@/components/swr-provider";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { IS_STAGING } from "@/lib/flags";
@@ -11,8 +12,13 @@ const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-sans" });
 const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-display",
-  weight: ["400", "500", "600", "700"],
+  // No `weight`: Fraunces is a variable font, so the browser gets one file per style with
+  // every weight in it, not one file per listed weight (2026-10-12, audit 2026-10-11 #23).
+  // Italic stays in this call: it reaches the page through the same `--font-display`
+  // family from a dozen rules (v1.css em, marquee, step numbers, donate / pricing /
+  // verify-hours pages), so a separate italic face means touching each of them.
   style: ["normal", "italic"],
+  axes: ["opsz"],
 });
 
 // A nonce is minted per request, so a page prerendered at build time would ship
@@ -49,12 +55,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${dmSans.variable} ${fraunces.variable} min-h-screen font-sans antialiased`}>
+        <SWRProvider>
         <AuthProvider>
           <div className="flex min-h-screen flex-col">
             {IS_STAGING && (
               <div
                 role="status"
-                style={{ background: "#f5ecd2", color: "#6b5518", borderBottom: "1px solid #ecd9a0", fontSize: ".82rem", textAlign: "center", padding: "8px 16px" }}
+                style={{ background: "var(--c-staging-bg)", color: "var(--c-staging-fg)", borderBottom: "1px solid var(--c-staging-border)", fontSize: "var(--fs-label)", textAlign: "center", padding: "8px 16px" }}
               >
                 Staging site — not a live service. Accounts and data here are for testing and will be deleted.
               </div>
@@ -70,6 +77,7 @@ export default function RootLayout({
             <SiteFooter />
           </div>
         </AuthProvider>
+        </SWRProvider>
       </body>
     </html>
   );

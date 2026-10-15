@@ -1,11 +1,12 @@
 "use client";
 
+import { errorText } from "@/lib/errors";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 
 import { V1Shell } from "@/components/v1/v1-shell";
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
 
 // The token arrives in the URL FRAGMENT (`/reset#<token>`), not `?token=`: a query
 // string reached the server's request log on every page load, and whoever read it
@@ -46,7 +47,7 @@ function ResetForm() {
     e.preventDefault();
     if (!token) return; // narrows the type: the form renders only once a token is read
     if (password !== password2) {
-      setError("Passwords don't match.");
+      setError("Passwords do not match.");
       return;
     }
     setError(null);
@@ -55,14 +56,14 @@ function ResetForm() {
       await api.resetPassword(token, password);
       setDone(true);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setError(errorText(err, "We could not reset your password. Check your connection and try again."));
     } finally {
       setSubmitting(false);
     }
   }
 
   if (token === null) {
-    return <p style={{ fontSize: ".85rem", color: "var(--muted)" }}>Loading…</p>;
+    return <p style={{ fontSize: "var(--fs-sm)", color: "var(--muted)" }}>Loading…</p>;
   }
   if (!token) {
     return <div className="ferr" role="alert" style={{ display: "block" }}>This reset link is missing its token. Request a new one.</div>;
@@ -70,7 +71,7 @@ function ResetForm() {
   if (done) {
     return (
       <div>
-        <p style={{ fontSize: ".85rem", color: "var(--muted)", marginBottom: 14 }}>Your password has been reset.</p>
+        <p style={{ fontSize: "var(--fs-sm)", color: "var(--muted)", marginBottom: 14 }}>Your password has been reset.</p>
         <button className="fsubmit" style={{ width: "100%" }} onClick={() => router.push("/login")}>Go to log in</button>
       </div>
     );
@@ -80,14 +81,14 @@ function ResetForm() {
       {error && <div className="ferr" role="alert" style={{ display: "block" }}>{error}</div>}
       <div className="fr">
         <label htmlFor="reset-password">New password</label>
-        <input id="reset-password" className="fc" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" />
+        <input id="reset-password" className="fc" type="password" required minLength={12} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 12 characters" />
       </div>
       <div className="fr">
         <label htmlFor="reset-password-confirm">Confirm new password</label>
         <input id="reset-password-confirm" className="fc" type="password" required value={password2} onChange={(e) => setPassword2(e.target.value)} placeholder="Repeat it" />
       </div>
       <button className="fsubmit" style={{ width: "100%" }} type="submit" disabled={submitting}>
-        {submitting ? "Resetting…" : "Set New Password"}
+        {submitting ? "Resetting…" : "Set new password"}
       </button>
     </form>
   );
@@ -104,7 +105,7 @@ export default function ResetPasswordPage() {
           </div>
           <div className="mbody">
             <ResetForm />
-            <p style={{ fontSize: ".8rem", color: "var(--muted)", textAlign: "center", marginTop: 14 }}>
+            <p style={{ fontSize: "var(--fs-label)", color: "var(--muted)", textAlign: "center", marginTop: 14 }}>
               <Link href="/login" style={{ color: "var(--green)", fontWeight: 600 }}>← Back to log in</Link>
             </p>
           </div>

@@ -1,11 +1,12 @@
 "use client";
 
+import { errorText } from "@/lib/errors";
 import { useState } from "react";
 
 import { StudentCell } from "@/components/student-cell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { hoursTitle } from "@/lib/hours";
 import { useAuthedQuery } from "@/lib/use-api";
@@ -57,7 +58,7 @@ export default function VerifyHoursPage() {
       setSelected(new Set());
       void mutate();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setError(errorText(err, "We could not verify those hours. Check your connection and try again."));
     } finally {
       setBulkBusy(false);
     }
@@ -74,7 +75,7 @@ export default function VerifyHoursPage() {
       setDenyNote("");
       void mutate();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setError(errorText(err, "We could not verify that entry. Check your connection and try again."));
     } finally {
       setBusyId(null);
     }
@@ -110,7 +111,7 @@ export default function VerifyHoursPage() {
     <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-10">
       <div>
         <span className="section-tag">Organization</span>
-        <h1 className="section-title">Verify Hours</h1>
+        <h1 className="section-title">Verify hours</h1>
       </div>
 
       {/* Not OrgReviewBanner: that component is styled for the .v1 shell and this page is not in it.
@@ -118,7 +119,7 @@ export default function VerifyHoursPage() {
       {!approvedOrg && (
         <div className="empty-state">
           {user.org_reviewed_at
-            ? "Your organization wasn't approved, so there are no hours to verify."
+            ? "Your organization was not approved, so there are no hours to verify."
             : "Your organization is being reviewed. Hours to verify will appear here once it is approved."}
         </div>
       )}
@@ -129,7 +130,7 @@ export default function VerifyHoursPage() {
           request failed hides real students waiting on their hours. */}
       {!fetching && loadError && (
         <div className="empty-state flex flex-col items-center gap-3">
-          <span>Couldn&apos;t load the verification queue. Check your connection and try again.</span>
+          <span>Could not load the verification queue. Check your connection and try again.</span>
           <Button variant="outline" onClick={retry}>Retry</Button>
         </div>
       )}
@@ -192,9 +193,9 @@ export default function VerifyHoursPage() {
                 <p className="opp-org">
                   {entry.hours}h · {SOURCE_LABEL[entry.source] ?? entry.source}
                 </p>
-                {entry.note && <p className="text-[0.8rem] italic text-muted-foreground">“{entry.note}”</p>}
+                {entry.note && <p className="text-[length:var(--fs-label)] italic text-muted-foreground">“{entry.note}”</p>}
                 {entry.status === "appealed" && entry.appeal_note && (
-                  <p className="text-[0.8rem] text-primary">Appeal: {entry.appeal_note}</p>
+                  <p className="text-[length:var(--fs-label)] text-primary">Appeal: {entry.appeal_note}</p>
                 )}
               </div>
               <div className="flex shrink-0 gap-2">

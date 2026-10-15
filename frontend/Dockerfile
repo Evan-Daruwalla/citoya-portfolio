@@ -3,7 +3,9 @@
 # for the refresh command. A floating tag is an unreviewed upstream change.
 FROM node:24-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20 AS deps
 WORKDIR /app
-COPY package.json package-lock.json* ./
+# .npmrc carries ignore-scripts=true, so the image install skips package lifecycle scripts
+# exactly like CI (2026-10-12, audit 2026-10-11 #50).
+COPY package.json package-lock.json* .npmrc ./
 RUN npm ci
 
 FROM node:24-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20 AS builder

@@ -3,9 +3,10 @@
 // Form state and writes for off-site hours (2026-09-27). The dashboard (.v1) and
 // /hours (shadcn) each render this form in their own visual system, and no file
 // mixes the two, so the logic lives here once and the markup stays in each page.
+import { errorText } from "@/lib/errors";
 import { useState, type FormEvent } from "react";
 
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
 import { TOKEN_KEY } from "@/lib/auth-context";
 import { localDateKey } from "@/lib/event-time";
 
@@ -41,11 +42,11 @@ export function useOffsiteHours(onChanged: () => void) {
       setActivity("");
       setSupervisor("");
       setNote("");
-      setMessage("Logged. Off-site hours are marked self-reported and don't count as verified.");
+      setMessage("Logged. Off-site hours are marked self-reported and do not count as verified.");
       // Unverified: no verified total or award moves, so only the hours list changes.
       onChanged();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setError(errorText(err, "We could not save your hours. Check your connection and try again."));
     } finally {
       setSubmitting(false);
     }
@@ -61,7 +62,7 @@ export function useOffsiteHours(onChanged: () => void) {
       await api.deleteHours(id, token);
       onChanged();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't delete that entry.");
+      setError(errorText(err, "Could not delete that entry."));
     } finally {
       setBusyId(null);
     }

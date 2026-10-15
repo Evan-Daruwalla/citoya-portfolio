@@ -6,7 +6,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { ReportConcern } from "@/components/report-concern";
+import logo from "@/public/logo.png";
 import { useAuth } from "@/lib/auth-context";
+import { dashboardPath } from "@/lib/v1-routes";
 
 // Exact v1 nav + footer chrome (transcribed from ../ServeLocal website/public/index.html),
 // wrapping page content in the scoped `.v1` root. Every converted screen uses this.
@@ -16,12 +18,11 @@ export function V1Shell({ children }: { children: React.ReactNode }) {
   // load and "Dashboard" pointed at /login until /auth/me resolved.
   // site-header.tsx already guarded this window; V1Shell — the nav most users
   // actually see, since it covers every v1 route — did not (audit 2026-09-01).
-  const { user, loading, logout } = useAuth();
+  const { user, loading } = useAuth();
   const pathname = usePathname();
 
   // Logged out → send Dashboard to /login (prompt to sign in); logged in → their dash.
-  const dashHref =
-    user?.role === "org" ? "/applicants" : user?.role === "student" ? "/dashboard" : "/login";
+  const dashHref = dashboardPath(user);
 
   const nl = (href: string, label: string, active: boolean) => (
     <Link className={`nl${active ? " on" : ""}`} href={href}>
@@ -33,14 +34,14 @@ export function V1Shell({ children }: { children: React.ReactNode }) {
     <div className="v1">
       <nav className="v1-nav" aria-label="Primary">
         <Link href="/" className="nav-logo">
-          <Image src="/logo.png" alt="" width={36} height={36} className="brand-logo" unoptimized />
+          <Image src={logo} alt="" width={36} height={36} className="brand-logo" unoptimized />
           <span className="nav-wordmark">
             Citoya
           </span>
         </Link>
         <div className="nav-links">
           {nl("/", "Home", pathname === "/")}
-          {nl("/discover", "Find Opportunities", pathname === "/discover")}
+          {nl("/discover", "Find opportunities", pathname === "/discover")}
           {nl(dashHref, "Dashboard", !!user && pathname === dashHref)}
           {nl("/leaderboard", "Community", pathname === "/leaderboard")}
         </div>
@@ -57,17 +58,22 @@ export function V1Shell({ children }: { children: React.ReactNode }) {
               <Link className="nl" href="/inbox">
                 Inbox
               </Link>
-              <button className="nav-btn nb-outline" onClick={logout}>
-                Log Out
-              </button>
+              {/* Two-factor login settings (2026-10-13): orgs and admins have no dashboard
+                  Account section, so this is their way back to recovery codes. */}
+              <Link className="nl" href="/security">
+                Security
+              </Link>
+              <Link className="nav-btn nb-outline" href="/logout">
+                Log out
+              </Link>
             </>
           ) : (
             <>
               <Link className="nav-btn nb-outline" href="/login">
-                Log In
+                Log in
               </Link>
               <Link className="nav-btn nb-solid" href="/register">
-                Sign Up
+                Sign up
               </Link>
             </>
           )}
@@ -89,12 +95,12 @@ export function V1Shell({ children }: { children: React.ReactNode }) {
             <p>Verified community service for students. Free forever.</p>
           </div>
           <div className="footer-links">
-            <Link href="/discover">Find Opportunities</Link>
+            <Link href="/discover">Find opportunities</Link>
             <Link href="/leaderboard">Community</Link>
-            <Link href="/for-organizations">For Organizations</Link>
+            <Link href="/for-organizations">For organizations</Link>
             <Link href="/pricing">Pricing</Link>
-            <Link href="/donate">Support Us</Link>
-            <Link href="/login">Log In</Link>
+            <Link href="/donate">Support us</Link>
+            <Link href="/login">Log in</Link>
           </div>
           {/* Year is computed, not hardcoded: it read "© 2026" and would have been
               wrong on every .v1 page from 2027-01-01 (audit 2026-08-08).
@@ -103,7 +109,7 @@ export function V1Shell({ children }: { children: React.ReactNode }) {
               those two sit in different calendar years and would otherwise log a
               mismatch. The text is cosmetic, so taking the client's value is right. */}
           <div className="footer-bottom" suppressHydrationWarning>
-            © {new Date().getFullYear()} Citoya · Free forever for students. · <Link href="/privacy">Privacy</Link> · <Link href="/terms">Terms</Link> ·{" "}
+            © {new Date().getFullYear()} Citoya · Students never pay. · <Link href="/privacy">Privacy</Link> · <Link href="/terms">Terms</Link> ·{" "}
             <ReportConcern subject="Report a concern" />
           </div>
         </div>

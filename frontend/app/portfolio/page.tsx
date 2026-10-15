@@ -1,11 +1,12 @@
 "use client";
 
-import { Link2, Lock, Printer, Trophy } from "lucide-react";
+import { Check, Link2, Lock, Printer, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 import { V1Shell } from "@/components/v1/v1-shell";
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
+import { errorText } from "@/lib/errors";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { useAuthedQuery } from "@/lib/use-api";
 import type { HoursWithOpportunity } from "@/lib/types";
@@ -51,7 +52,7 @@ export default function PortfolioPage() {
     } catch (err) {
       setPublicOverride(!next); // revert on failure
       // audit DY Low 42, 2026-10-07: the revert alone left no sign the click had failed.
-      setToggleError(err instanceof ApiError ? err.message : "Could not update your privacy setting.");
+      setToggleError(errorText(err, "Could not update your privacy setting."));
     }
   }
 
@@ -65,7 +66,7 @@ export default function PortfolioPage() {
     } catch (err) {
       setNameOverride(!next); // revert on failure
       // Turning it ON is a 403 for a consent-blocked minor; the backend's message says why.
-      setNameError(err instanceof ApiError ? err.message : "Could not update your privacy setting.");
+      setNameError(errorText(err, "Could not update your privacy setting."));
     }
   }
 
@@ -106,12 +107,12 @@ export default function PortfolioPage() {
     <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 20 }}>
       {/* An em dash, not 0, when the load failed. The fix below explains that an
           empty table is a loading problem — while these cards sat above it
-          asserting "0 Verified Hours" in large type, which is the same false
+          asserting "0 Verified hours" in large type, which is the same false
           claim in the same viewport (landing-check 2026-09-01). */}
-      <div style={{ fontSize: "1.8rem", fontWeight: 700, color: "var(--green)" }}>
+      <div style={{ fontSize: "var(--fs-h2)", fontWeight: 700, color: "var(--green)" }}>
         {loadFailed ? "—" : n}
       </div>
-      <div style={{ fontSize: ".78rem", color: "var(--muted)" }}>{label}</div>
+      <div style={{ fontSize: "var(--fs-micro)", color: "var(--muted)" }}>{label}</div>
     </div>
   );
 
@@ -119,19 +120,19 @@ export default function PortfolioPage() {
     <V1Shell>
       <div className="section" style={{ maxWidth: 680 }}>
         <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.6rem", color: "var(--dark)", marginBottom: 4 }}>{user.full_name || "Your"}: Verified Service Transcript</h2>
-          <p style={{ color: "var(--muted)", fontSize: ".88rem" }}>Every hour below was verified by the hosting organization.</p>
+          <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-h2)", color: "var(--dark)", marginBottom: 4 }}>{user.full_name || "Your"}: Verified service transcript</h2>
+          <p style={{ color: "var(--muted)", fontSize: "var(--fs-sm)" }}>Every hour below was verified by the hosting organization.</p>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, marginBottom: 28, textAlign: "center" }}>
-          {statCard(totalHours, "Verified Hours")}
+          {statCard(totalHours, "Verified hours")}
           {statCard(byOrg.size, "Organizations")}
-          {statCard(earned.length, "Awards Earned")}
+          {statCard(earned.length, "Awards earned")}
         </div>
 
         <div style={{ marginBottom: 24 }}>
-          <h4 style={{ fontSize: ".92rem", color: "var(--dark)", marginBottom: 10 }}>Hours by Organization</h4>
-          <table className="tbl" style={{ fontSize: ".85rem" }}>
+          <h4 style={{ fontSize: "var(--fs-sm)", color: "var(--dark)", marginBottom: 10 }}>Hours by organization</h4>
+          <table className="tbl" style={{ fontSize: "var(--fs-sm)" }}>
             <tbody>
               {orgRows.length ? orgRows.map(([org, hrs]) => (
                 <tr key={org}>
@@ -143,7 +144,7 @@ export default function PortfolioPage() {
                   <td style={{ color: "var(--muted)" }}>
                     {loadFailed ? (
                       <>
-                        Couldn&apos;t load your transcript. This is a loading problem, not an
+                        Could not load your transcript. This is a loading problem, not an
                         empty record.{" "}
                         <button className="btn-s" style={{ marginLeft: 8 }} onClick={retryHours}>
                           Retry
@@ -160,14 +161,14 @@ export default function PortfolioPage() {
         </div>
 
         <div style={{ marginBottom: 24 }}>
-          <h4 style={{ fontSize: ".92rem", color: "var(--dark)", marginBottom: 10 }}><Trophy size={16} strokeWidth={1.75} aria-hidden /> Awards</h4>
+          <h4 style={{ fontSize: "var(--fs-sm)", color: "var(--dark)", marginBottom: 10 }}><Trophy size={16} strokeWidth={1.75} aria-hidden /> Awards</h4>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {earned.length ? earned.map((a) => (
-              <span key={a.id} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "var(--green-pale)", border: "1px solid var(--green-mid)", padding: "6px 12px", borderRadius: 100, fontSize: ".78rem", fontWeight: 600, color: "var(--green)" }}><Trophy size={13} strokeWidth={1.75} aria-hidden />{a.name}</span>
+              <span key={a.id} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "var(--green-pale)", border: "1px solid var(--green-mid)", padding: "6px 12px", borderRadius: 100, fontSize: "var(--fs-micro)", fontWeight: 600, color: "var(--green)" }}><Trophy size={13} strokeWidth={1.75} aria-hidden />{a.name}</span>
             )) : (
-              <span style={{ color: "var(--muted)", fontSize: ".83rem" }}>
+              <span style={{ color: "var(--muted)", fontSize: "var(--fs-label)" }}>
                 {loadFailed
-                  ? "Couldn't load your awards — try again in a moment."
+                  ? "Could not load your awards — try again in a moment."
                   : "No awards yet. They show up on their own as your verified hours add up."}
               </span>
             )}
@@ -176,13 +177,13 @@ export default function PortfolioPage() {
 
         <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 20, flexWrap: "wrap" }}>
           <button className="btn-s" style={{ padding: "10px 20px" }} onClick={() => window.print()}><Printer size={15} strokeWidth={1.75} aria-hidden /> Print</button>
-          {isPublic && <button className="btn-s" style={{ padding: "10px 20px" }} onClick={copyLink}>{copied ? "Copied ✓" : <><Link2 size={15} strokeWidth={1.75} aria-hidden /> Copy Public Link</>}</button>}
+          {isPublic && <button className="btn-s" style={{ padding: "10px 20px" }} onClick={copyLink}>{copied ? <>Copied <Check size={16} strokeWidth={1.75} aria-hidden /></> : <><Link2 size={15} strokeWidth={1.75} aria-hidden /> Copy public link</>}</button>}
         </div>
 
         <div className="form-box" style={{ maxWidth: 520, margin: "22px auto 0" }}>
           <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>
             <input type="checkbox" checked={isPublic} onChange={(e) => togglepublic(e.target.checked)} style={{ width: 15, height: 15, marginTop: 3, accentColor: "var(--green)" }} />
-            <span style={{ fontSize: ".85rem", color: "var(--text)" }}>
+            <span style={{ fontSize: "var(--fs-sm)", color: "var(--text)" }}>
               <strong>Make my transcript public.</strong> Anyone with the link can view your verified hours,
               organizations, and awards (good for college and scholarship applications). Off by default.
             </span>
@@ -190,11 +191,11 @@ export default function PortfolioPage() {
           {toggleError && <div className="ferr" role="alert" style={{ display: "block", marginTop: 10 }}>{toggleError}</div>}
           <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", fontWeight: 400, textTransform: "none", letterSpacing: 0, marginTop: 14 }}>
             <input type="checkbox" checked={nameVisible} onChange={(e) => toggleNameVisible(e.target.checked)} style={{ width: 15, height: 15, marginTop: 3, accentColor: "var(--green)" }} />
-            <span style={{ fontSize: ".85rem", color: "var(--text)", fontWeight: 600 }}>
+            <span style={{ fontSize: "var(--fs-sm)", color: "var(--text)", fontWeight: 600 }}>
               Show my name on the leaderboard and on my reviews
             </span>
           </label>
-          <p style={{ fontSize: ".78rem", color: "var(--muted)", margin: "2px 0 0 25px" }}>
+          <p style={{ fontSize: "var(--fs-micro)", color: "var(--muted)", margin: "2px 0 0 25px" }}>
             When off, you are left off the public leaderboard and your reviews show as &quot;A Citoya student&quot;.
           </p>
           {nameError && <div className="ferr" role="alert" style={{ display: "block", marginTop: 10 }}>{nameError}</div>}

@@ -1,6 +1,7 @@
 "use client";
 
-import { Archive, BadgeCheck, CalendarDays, ClipboardList, Clock, Download, Globe, Landmark, LogOut, MapPin, MessageCircle, RefreshCw, Shuffle, Star, TrendingUp, TriangleAlert, Users, type LucideIcon } from "lucide-react";
+import { errorText } from "@/lib/errors";
+import { Archive, BadgeCheck, CalendarDays, Check, ClipboardList, Clock, Download, Globe, Landmark, LogOut, MapPin, MessageCircle, RefreshCw, Shuffle, Star, TrendingUp, TriangleAlert, Users, X, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useMemo, useState } from "react";
@@ -9,7 +10,7 @@ import { CategoryIcon, getCategoryMeta } from "@/components/v1/category-icon";
 import { OrgReviewBanner } from "@/components/org-review-banner";
 import { StudentCell } from "@/components/student-cell";
 import { V1Shell } from "@/components/v1/v1-shell";
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
 import { useAuthedQuery } from "@/lib/use-api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { toCsv } from "@/lib/csv";
@@ -23,13 +24,13 @@ type Tab = "listings" | "analytics" | "calendar" | "applicants" | "hours" | "his
 type Audience = "all" | "approved" | "pending";
 
 const TABS: { id: Tab; label: string; Icon: LucideIcon }[] = [
-  { id: "listings", label: "My Listings", Icon: ClipboardList },
+  { id: "listings", label: "My listings", Icon: ClipboardList },
   { id: "analytics", label: "Analytics", Icon: TrendingUp },
   { id: "calendar", label: "Calendar", Icon: CalendarDays },
   { id: "applicants", label: "Applicants", Icon: Users },
-  { id: "hours", label: "Verify Hours", Icon: BadgeCheck },
-  { id: "history", label: "Listing History", Icon: Archive },
-  { id: "profile", label: "Org Profile", Icon: Landmark },
+  { id: "hours", label: "Verify hours", Icon: BadgeCheck },
+  { id: "history", label: "Listing history", Icon: Archive },
+  { id: "profile", label: "Org profile", Icon: Landmark },
 ];
 
 function fmtDate(iso: string): string {
@@ -164,7 +165,7 @@ export default function OrgDashboardPage() {
       await api.decideApplication(id, action, token);
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setError(errorText(err, "We could not save your decision. Check your connection and try again."));
     } finally {
       setBusyId(null);
     }
@@ -180,7 +181,7 @@ export default function OrgDashboardPage() {
       setEndorsedNote((m) => ({ ...m, [hoursId]: skill }));
       void mutateGiven();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setError(errorText(err, "We could not save that endorsement. Check your connection and try again."));
     } finally {
       setBusyId(null);
     }
@@ -197,7 +198,7 @@ export default function OrgDashboardPage() {
       setDenyNote("");
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setError(errorText(err, "We could not verify those hours. Check your connection and try again."));
     } finally {
       setBusyId(null);
     }
@@ -211,7 +212,7 @@ export default function OrgDashboardPage() {
       await api.setFeatured(o.id, !o.featured, token);
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not update the listing.");
+      setError(errorText(err, "Could not update the listing."));
     } finally {
       setBusyId(null);
     }
@@ -229,7 +230,7 @@ export default function OrgDashboardPage() {
       await api.setActive(o.id, !o.active, token);
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not update the listing.");
+      setError(errorText(err, "Could not update the listing."));
     } finally {
       setBusyId(null);
     }
@@ -245,7 +246,7 @@ export default function OrgDashboardPage() {
       setBroadcastMsg(`Sent to ${sent} applicant${sent === 1 ? "" : "s"}.`);
       setMsgBody("");
     } catch (err) {
-      setBroadcastMsg(err instanceof ApiError ? err.message : "Failed to send.");
+      setBroadcastMsg(errorText(err, "Failed to send."));
     } finally {
       setBroadcasting(false);
     }
@@ -262,7 +263,7 @@ export default function OrgDashboardPage() {
     } catch (err) {
       // audit DY Low 42, 2026-10-07: this was swallowed, so a failed save looked like
       // nothing had been clicked and the org kept believing the preference was stored.
-      setProfileError(err instanceof ApiError ? err.message : "Could not save your changes.");
+      setProfileError(errorText(err, "Could not save your changes."));
     }
   }
 
@@ -292,7 +293,7 @@ export default function OrgDashboardPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      setDeleteError(err instanceof ApiError ? err.message : "Could not export your data.");
+      setDeleteError(errorText(err, "Could not export your data."));
     }
   }
 
@@ -308,7 +309,7 @@ export default function OrgDashboardPage() {
       // there offers the restore.
       router.push("/login?deleted=1");
     } catch (err) {
-      setDeleteError(err instanceof ApiError ? err.message : "Could not delete your account.");
+      setDeleteError(errorText(err, "Could not delete your account."));
       setDeleting(false);
     }
   }
@@ -331,9 +332,9 @@ export default function OrgDashboardPage() {
   const loadErrorPanel = (
     <div className="load-error">
       <div className="empty-icon"><TriangleAlert size={40} strokeWidth={1.75} aria-hidden /></div>
-      <div className="ferr" role="alert">Couldn&apos;t load your data. Check your connection and try again.</div>
+      <div className="ferr" role="alert">Could not load your data. Check your connection and try again.</div>
       <div>
-        <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={refresh}>
+        <button className="btn-s btn-sm" onClick={refresh}>
           Retry
         </button>
       </div>
@@ -362,14 +363,14 @@ export default function OrgDashboardPage() {
       ? <span className="format-pip remote"><Globe size={12} strokeWidth={1.75} aria-hidden />Remote</span>
       : fmt === "hybrid" || loc.includes("hybrid")
         ? <span className="format-pip hybrid"><Shuffle size={12} strokeWidth={1.75} aria-hidden />Hybrid</span>
-        : <span className="format-pip inperson"><MapPin size={12} strokeWidth={1.75} aria-hidden />In-Person</span>;
+        : <span className="format-pip inperson"><MapPin size={12} strokeWidth={1.75} aria-hidden />In-person</span>;
     const appCount = apps.filter((a) => a.opportunity_id === o.id).length;
     return (
       <div key={o.id} className={`opp-card${o.featured ? " featured" : ""}`}>
         <div className="oc-top">
           <div className="oc-avatar" style={{ background: meta.bg, color: meta.fg }}><CategoryIcon category={o.category} size={20} /></div>
           <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-            {o.featured && <span className="badge badge-featured">★ Featured</span>}
+            {o.featured && <span className="badge badge-featured"><Star size={16} strokeWidth={1.75} aria-hidden /> Featured</span>}
             {/* M15.1: "Pending review" BEATS Active/Inactive, because a listing
                 labelled "Active" that no student can see is a lie. Expired still
                 beats pending — an expired listing is not waiting on anything. */}
@@ -378,7 +379,7 @@ export default function OrgDashboardPage() {
               : !user!.is_approved
                 ? <span className="badge badge-pending">{user!.org_reviewed_at ? "Not approved" : "Pending review"}</span>
                 : <span className={`badge ${o.active ? "badge-verified" : "badge-denied"}`}>{o.active ? "Active" : "Inactive"}</span>}
-            {isRecurring(o) && <span className="badge badge-skill" style={{ fontSize: ".65rem" }}><RefreshCw size={12} strokeWidth={1.75} aria-hidden /> {o.recurrence === "weekly" ? "Weekly" : "Monthly"}</span>}
+            {isRecurring(o) && <span className="badge badge-skill" style={{ fontSize: "var(--fs-micro)" }}><RefreshCw size={12} strokeWidth={1.75} aria-hidden /> {o.recurrence === "weekly" ? "Weekly" : "Monthly"}</span>}
           </div>
         </div>
         <Link href={`/opportunities/${o.id}`} className="oc-title">{o.title}</Link>
@@ -389,24 +390,24 @@ export default function OrgDashboardPage() {
           <span><Users size={13} strokeWidth={1.75} aria-hidden />{o.spots_remaining}/{o.spots_available}</span>
         </div>
         <div className="oc-footer">
-          <span style={{ fontSize: ".73rem", color: "var(--muted)" }}>{appCount} volunteers</span>
+          <span style={{ fontSize: "var(--fs-micro)", color: "var(--muted)" }}>{appCount} volunteers</span>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {!inHistory && (
               <>
                 <button
                   className="btn-s"
-                  style={{ padding: "6px 12px", fontSize: ".75rem" }}
+                  style={{ padding: "6px 12px", fontSize: "var(--fs-micro)" }}
                   onClick={() => { setTab("applicants"); setMsgOpp(o.id); }}
                 ><MessageCircle size={14} strokeWidth={1.75} aria-hidden /> Message</button>
                 {user!.plan === "pro" ? (
                   <button
                     className="btn-s"
-                    style={{ padding: "6px 12px", fontSize: ".75rem", color: "#8a6d1d", borderColor: "var(--gold)" }}
+                    style={{ padding: "6px 12px", fontSize: "var(--fs-micro)", color: "var(--c-gold-dark)", borderColor: "var(--gold)" }}
                     disabled={busyId === o.id}
                     onClick={() => toggleFeature(o)}
-                  >{o.featured ? "★ Unfeature" : "☆ Feature"}</button>
+                  ><Star size={16} strokeWidth={1.75} aria-hidden fill={o.featured ? "currentColor" : "none"} /> {o.featured ? "Unfeature" : "Feature"}</button>
                 ) : (
-                  <Link className="btn-s" style={{ padding: "6px 12px", fontSize: ".75rem" }} href="/billing">Upgrade to feature</Link>
+                  <Link className="btn-s" style={{ padding: "6px 12px", fontSize: "var(--fs-micro)" }} href="/billing">Upgrade to feature</Link>
                 )}
               </>
             )}
@@ -416,7 +417,7 @@ export default function OrgDashboardPage() {
             {(!inHistory || o.active) && (
               <button
                 className="btn-s"
-                style={{ padding: "6px 12px", fontSize: ".75rem" }}
+                style={{ padding: "6px 12px", fontSize: "var(--fs-micro)" }}
                 disabled={busyId === o.id}
                 onClick={() => toggleActive(o)}
               >{o.active ? "Deactivate" : "Reactivate"}</button>
@@ -435,7 +436,7 @@ export default function OrgDashboardPage() {
           <div className="dash-sidebar">
             <div className="ds-avatar">{(user.full_name || "O").charAt(0).toUpperCase()}</div>
             <div className="ds-name">{user.full_name || "Organization"}</div>
-            <div className="ds-role" style={{ color: "var(--muted)", fontSize: ".73rem", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 10 }}>Organization</div>
+            <div className="ds-role" style={{ color: "var(--muted)", fontSize: "var(--fs-micro)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 10 }}>Organization</div>
             <div className="plan-usage" style={{ marginBottom: 14 }}>
               {/* `—` not 0 while the load is failed: these sit in the sidebar on
                   every tab, including next to loadErrorPanel (landing-check 2026-09-01). */}
@@ -446,15 +447,15 @@ export default function OrgDashboardPage() {
               {user.plan !== "pro" && <><br /><Link href="/billing" style={{ color: "var(--green)" }}>Upgrade to Pro →</Link></>}
             </div>
             <hr className="ds-divider" />
-            <div className="ds-stat"><span className="ds-stat-label">Active Listings</span><span className="ds-stat-val big">{loadError || loadPending ? "—" : activeOpps.filter((o) => o.active).length}</span></div>
-            <div className="ds-stat"><span className="ds-stat-label">Total Volunteers</span><span className="ds-stat-val">{loadError || loadPending ? "—" : apps.length}</span></div>
-            <div className="ds-stat"><span className="ds-stat-label">Pending Approvals</span><span className="ds-stat-val">{loadError || loadPending ? "—" : pending.length}</span></div>
+            <div className="ds-stat"><span className="ds-stat-label">Active listings</span><span className="ds-stat-val big">{loadError || loadPending ? "—" : activeOpps.filter((o) => o.active).length}</span></div>
+            <div className="ds-stat"><span className="ds-stat-label">Total volunteers</span><span className="ds-stat-val">{loadError || loadPending ? "—" : apps.length}</span></div>
+            <div className="ds-stat"><span className="ds-stat-label">Pending approvals</span><span className="ds-stat-val">{loadError || loadPending ? "—" : pending.length}</span></div>
             <hr className="ds-divider" />
             <div className="ds-nav">
               {TABS.map((t) => (
                 <button key={t.id} className={`ds-link${tab === t.id ? " on" : ""}`} onClick={() => setTab(t.id)}><t.Icon size={15} strokeWidth={1.75} aria-hidden />{t.label}</button>
               ))}
-              <button className="ds-link" onClick={logout}><LogOut size={15} strokeWidth={1.75} aria-hidden />Log Out</button>
+              <Link className="ds-link" href="/logout"><LogOut size={15} strokeWidth={1.75} aria-hidden />Log out</Link>
             </div>
           </div>
         </div>
@@ -469,12 +470,12 @@ export default function OrgDashboardPage() {
           {tab === "listings" && (
             <div className="tab-panel on">
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
-                <h1 className="dash-h" style={{ marginBottom: 0 }}>My Listings</h1>
-                <Link className="btn-p" style={{ padding: "10px 20px", fontSize: ".85rem" }} href="/opportunities/new">＋ Add Listing</Link>
+                <h1 className="dash-h" style={{ marginBottom: 0 }}>My listings</h1>
+                <Link className="btn-p" style={{ padding: "10px 20px", fontSize: "var(--fs-sm)" }} href="/opportunities/new">＋ Add listing</Link>
               </div>
               <div className="cards-grid">
                 {panelState ?? (activeOpps.length ? activeOpps.map((o) => listingCard(o, false)) : (
-                  <div className="empty"><div className="empty-icon"><ClipboardList size={40} strokeWidth={1.75} aria-hidden /></div>No listings yet. Hit ＋ Add Listing to post your first.</div>
+                  <div className="empty"><div className="empty-icon"><ClipboardList size={40} strokeWidth={1.75} aria-hidden /></div>No listings yet. Hit ＋ Add listing to post your first.</div>
                 ))}
               </div>
             </div>
@@ -483,7 +484,7 @@ export default function OrgDashboardPage() {
           {tab === "analytics" && (
             <div className="tab-panel on">
               <h1 className="dash-h" style={{ marginBottom: 6 }}>Analytics</h1>
-              <p style={{ fontSize: ".83rem", color: "var(--muted)", fontWeight: 300, marginBottom: 18 }}>Detail views, approved signups and verified hours for each of your listings.</p>
+              <p style={{ fontSize: "var(--fs-label)", color: "var(--muted)", fontWeight: 400, marginBottom: 18 }}>Detail views, approved signups and verified hours for each of your listings.</p>
               {/* M14.2. Backed by GET /analytics/org, scoped in SQL to this org.
                   Until 2026-09-03 these numbers were derived client-side and two of
                   the three were wrong: "Applicants" counted rejected and withdrawn
@@ -496,8 +497,8 @@ export default function OrgDashboardPage() {
               {orgStatsError ? (
                 <div className="load-error">
                   <div className="empty-icon"><TriangleAlert size={40} strokeWidth={1.75} aria-hidden /></div>
-                  <div className="ferr" role="alert">Couldn&apos;t load your analytics. Check your connection and try again.</div>
-                  <div><button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={retryOrgStats}>Retry</button></div>
+                  <div className="ferr" role="alert">Could not load your analytics. Check your connection and try again.</div>
+                  <div><button className="btn-s btn-sm" onClick={retryOrgStats}>Retry</button></div>
                 </div>
               ) : orgStatsLoading || !orgStats ? (
                 /* `!orgStats` matters: the hook can be neither loading nor errored
@@ -513,10 +514,10 @@ export default function OrgDashboardPage() {
               ) : (
                 <>
                   <div className="lb-band" style={{ marginBottom: 18 }}>
-                    <div className="lb-stat"><div className="lb-stat-num traffic-num">{orgStats.total_views.toLocaleString()}</div><div className="lb-stat-label">Detail Views</div></div>
-                    <div className="lb-stat"><div className="lb-stat-num traffic-num">{orgStats.total_approved.toLocaleString()}</div><div className="lb-stat-label">Approved Signups</div></div>
-                    <div className="lb-stat"><div className="lb-stat-num traffic-num">{orgStats.total_verified_hours.toLocaleString()}</div><div className="lb-stat-label">Verified Hours</div></div>
-                    <div className="lb-stat"><div className="lb-stat-num traffic-num">{orgStats.returning_volunteers.toLocaleString()}</div><div className="lb-stat-label">Returning Volunteers</div></div>
+                    <div className="lb-stat"><div className="lb-stat-num traffic-num">{orgStats.total_views.toLocaleString()}</div><div className="lb-stat-label">Detail views</div></div>
+                    <div className="lb-stat"><div className="lb-stat-num traffic-num">{orgStats.total_approved.toLocaleString()}</div><div className="lb-stat-label">Approved signups</div></div>
+                    <div className="lb-stat"><div className="lb-stat-num traffic-num">{orgStats.total_verified_hours.toLocaleString()}</div><div className="lb-stat-label">Verified hours</div></div>
+                    <div className="lb-stat"><div className="lb-stat-num traffic-num">{orgStats.returning_volunteers.toLocaleString()}</div><div className="lb-stat-label">Returning volunteers</div></div>
                   </div>
                   <table className="tbl">
                     <caption className="sr-only">Per-listing detail views, approved signups, fill rate and verified hours</caption>
@@ -544,7 +545,7 @@ export default function OrgDashboardPage() {
                             <td className="traffic-num" style={{ textAlign: "right" }}>{row.approved.toLocaleString()}</td>
                             <td>
                               {pct === null ? (
-                                <span style={{ fontSize: ".78rem", color: "var(--muted)" }}>Per-date &mdash; see listing</span>
+                                <span style={{ fontSize: "var(--fs-micro)", color: "var(--muted)" }}>Per-date &mdash; see listing</span>
                               ) : (
                                 <>
                                   <div className="progress-bar"><div className="progress-fill" style={{ width: `${pct}%` }} /></div>
@@ -560,7 +561,7 @@ export default function OrgDashboardPage() {
                   </table>
                 </>
               )}
-              <div style={{ marginTop: 16, padding: "14px 16px", background: "var(--gold-pale, #fdf7e3)", border: "1px solid var(--gold)", borderRadius: 8, fontSize: ".83rem", color: "var(--dark)" }}>
+              <div style={{ marginTop: 16, padding: "14px 16px", background: "var(--gold-pale, var(--c-gold-pale-fallback))", border: "1px solid var(--gold)", borderRadius: 6, fontSize: "var(--fs-label)", color: "var(--dark)" }}>
                 <Star size={14} strokeWidth={1.75} aria-hidden /> <strong>Pro adds:</strong> unlimited listings and featured placement at the top of search.
               </div>
             </div>
@@ -568,7 +569,7 @@ export default function OrgDashboardPage() {
 
           {tab === "calendar" && (
             <div className="tab-panel on">
-              <h1 className="dash-h">Events Calendar</h1>
+              <h1 className="dash-h">Events calendar</h1>
               {panelState}
               <div className="cal-wrap">
                 <div className="cal-hdr"><span className="cal-title">{now.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</span></div>
@@ -592,7 +593,7 @@ export default function OrgDashboardPage() {
 
           {tab === "applicants" && (
             <div className="tab-panel on">
-              <h1 className="dash-h">Volunteer Applicants</h1>
+              <h1 className="dash-h">Volunteer applicants</h1>
 
               {/* Broadcast composer (v2 messaging) */}
               <div className="form-box" style={{ marginBottom: 18 }}>
@@ -613,7 +614,7 @@ export default function OrgDashboardPage() {
                     <option value="pending">Pending only</option>
                   </select>
                   <button className="fsubmit" style={{ marginTop: 0 }} disabled={broadcasting || !msgOpp || !msgBody.trim()} onClick={sendBroadcast}>{broadcasting ? "Sending…" : "Send"}</button>
-                  {broadcastMsg && <span style={{ fontSize: ".82rem", color: "var(--muted)" }}>{broadcastMsg}</span>}
+                  {broadcastMsg && <span style={{ fontSize: "var(--fs-label)", color: "var(--muted)" }}>{broadcastMsg}</span>}
                 </div>
               </div>
 
@@ -626,13 +627,13 @@ export default function OrgDashboardPage() {
                         <td>
                           <StudentCell name={a.student_name} email={a.student_email} inactive={a.student_inactive} />
                         </td>
-                        <td style={{ fontSize: ".83rem" }}><strong>{a.opportunity.title}</strong></td>
+                        <td style={{ fontSize: "var(--fs-label)" }}><strong>{a.opportunity.title}</strong></td>
                         <td><span className={`status-pill sp-${a.status}`}>{a.status}</span></td>
-                        <td style={{ fontSize: ".78rem", color: "var(--muted)" }}>{fmtDate(a.created_at)}</td>
+                        <td style={{ fontSize: "var(--fs-micro)", color: "var(--muted)" }}>{fmtDate(a.created_at)}</td>
                         <td>{a.status === "pending" && (
                           <div style={{ display: "flex", gap: 6 }}>
-                            <button className="btn-approve" disabled={busyId === a.id} onClick={() => decide(a.id, "approve")}>✓</button>
-                            <button className="btn-reject" disabled={busyId === a.id} onClick={() => decide(a.id, "reject")}>✕</button>
+                            <button className="btn-approve" disabled={busyId === a.id} onClick={() => decide(a.id, "approve")} aria-label="Approve"><Check size={16} strokeWidth={1.75} aria-hidden /></button>
+                            <button className="btn-reject" disabled={busyId === a.id} onClick={() => decide(a.id, "reject")} aria-label="Reject"><X size={16} strokeWidth={1.75} aria-hidden /></button>
                           </div>
                         )}</td>
                       </tr>
@@ -640,17 +641,17 @@ export default function OrgDashboardPage() {
                   </tbody>
                 </table>
               ) : (
-                <div className="empty"><div className="empty-icon"><Users size={40} strokeWidth={1.75} aria-hidden /></div>No applicants yet.</div>
+                <div className="empty"><div className="empty-icon"><Users size={40} strokeWidth={1.75} aria-hidden /></div>No applicants yet. Students appear here once they apply to a listing.</div>
               ))}
             </div>
           )}
 
           {tab === "hours" && (
             <div className="tab-panel on">
-              <h1 className="dash-h" style={{ marginBottom: 6 }}>Verify Hours</h1>
-              <p style={{ fontSize: ".83rem", color: "var(--muted)", fontWeight: 300, marginBottom: 14 }}>Review and approve or deny volunteer hour requests.</p>
+              <h1 className="dash-h" style={{ marginBottom: 6 }}>Verify hours</h1>
+              <p style={{ fontSize: "var(--fs-label)", color: "var(--muted)", fontWeight: 400, marginBottom: 14 }}>Review and approve or deny volunteer hour requests.</p>
               <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-                <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".82rem" }} onClick={exportRoster}><Download size={15} strokeWidth={1.75} aria-hidden /> Export Volunteer Roster (CSV)</button>
+                <button className="btn-s btn-sm" onClick={exportRoster}><Download size={15} strokeWidth={1.75} aria-hidden /> Export volunteer roster (CSV)</button>
               </div>
               {panelState ?? (hours.length ? (
                 <table className="tbl">
@@ -662,14 +663,14 @@ export default function OrgDashboardPage() {
                         <td>
                           <StudentCell name={h.student_name} email={h.student_email} inactive={h.student_inactive} />
                         </td>
-                        <td style={{ fontSize: ".83rem" }}><strong>{hoursTitle(h)}</strong></td>
-                        <td style={{ fontSize: ".78rem" }}>{h.occurrence_date ? fmtDateKey(h.occurrence_date) : "—"}</td>
+                        <td style={{ fontSize: "var(--fs-label)" }}><strong>{hoursTitle(h)}</strong></td>
+                        <td style={{ fontSize: "var(--fs-micro)" }}>{h.occurrence_date ? fmtDateKey(h.occurrence_date) : "—"}</td>
                         <td><strong>{h.hours}</strong></td>
                         <td><span className={`status-pill sp-${h.status}`}>{h.status}</span></td>
                         <td>{(h.status === "pending" || h.status === "appealed") && (
                           <div style={{ display: "flex", gap: 6 }}>
-                            <button className="btn-approve" disabled={busyId === h.id} onClick={() => verify(h.id, "approve")}>✓ Verify</button>
-                            <button className="btn-reject" disabled={busyId === h.id || denyingId === h.id} onClick={() => { setDenyingId(h.id); setDenyNote(""); }}>✕ Deny</button>
+                            <button className="btn-approve" disabled={busyId === h.id} onClick={() => verify(h.id, "approve")}><Check size={16} strokeWidth={1.75} aria-hidden /> Verify</button>
+                            <button className="btn-reject" disabled={busyId === h.id || denyingId === h.id} onClick={() => { setDenyingId(h.id); setDenyNote(""); }}><X size={16} strokeWidth={1.75} aria-hidden /> Deny</button>
                           </div>
                         )}
                         {h.status === "verified" && h.opportunity && h.opportunity.skills.length > 0 && (() => {
@@ -696,7 +697,7 @@ export default function OrgDashboardPage() {
                               >
                                 Endorse
                               </button>
-                              {endorsedNote[h.id] && <span style={{ fontSize: ".78rem", color: "var(--muted)" }}>Endorsed: {endorsedNote[h.id]}</span>}
+                              {endorsedNote[h.id] && <span style={{ fontSize: "var(--fs-micro)", color: "var(--muted)" }}>Endorsed: {endorsedNote[h.id]}</span>}
                             </div>
                           );
                         })()}</td>
@@ -732,8 +733,8 @@ export default function OrgDashboardPage() {
 
           {tab === "history" && (
             <div className="tab-panel on">
-              <h1 className="dash-h" style={{ marginBottom: 6 }}>Listing History</h1>
-              <p style={{ fontSize: ".83rem", color: "var(--muted)", fontWeight: 300, marginBottom: 18 }}>One-time listings whose end date has passed. Recurring listings always stay in My Listings.</p>
+              <h1 className="dash-h" style={{ marginBottom: 6 }}>Listing history</h1>
+              <p style={{ fontSize: "var(--fs-label)", color: "var(--muted)", fontWeight: 400, marginBottom: 18 }}>One-time listings whose end date has passed. Recurring listings always stay in My listings.</p>
               <div className="cards-grid">
                 {panelState ?? (historyOpps.length ? historyOpps.map((o) => listingCard(o, true)) : (
                   <div className="empty"><div className="empty-icon"><Archive size={40} strokeWidth={1.75} aria-hidden /></div>No expired listings yet.</div>
@@ -744,15 +745,15 @@ export default function OrgDashboardPage() {
 
           {tab === "profile" && (
             <div className="tab-panel on">
-              <h1 className="dash-h">Organization Profile</h1>
+              <h1 className="dash-h">Organization profile</h1>
               <div className="form-box" style={{ maxWidth: 580 }}>
                 {/* Disabled because nothing saves it. `saveProfile` sends only
                     email_notifications and `api.updateMe` accepts only
                     email_notifications/portfolio_public — so an org could edit this,
-                    press Save Changes, see "Saved ✓" and lose the value silently
+                    press Save changes, see "Saved ✓" and lose the value silently
                     (audit 2026-08-06). Re-enable when a backend field exists. */}
                 <div className="fr">
-                  <label htmlFor="applicants-org-name">Organization Name</label>
+                  <label htmlFor="applicants-org-name">Organization name</label>
                   <input id="applicants-org-name" className="fc" defaultValue={user.full_name || ""} disabled />
                   <div className="fhint">Contact support to change your organization name.</div>
                 </div>
@@ -763,25 +764,25 @@ export default function OrgDashboardPage() {
                     Email me when I get a notification
                   </label>
                 </div>
-                <button className="fsubmit" onClick={saveProfile}>Save Changes</button>
-                {savedProfile && <span style={{ marginLeft: 12, fontSize: ".82rem", color: "var(--green)" }}>Saved ✓</span>}
+                <button className="fsubmit" onClick={saveProfile}>Save changes</button>
+                {savedProfile && <span style={{ marginLeft: 12, fontSize: "var(--fs-label)", color: "var(--green)" }}>Saved <Check size={16} strokeWidth={1.75} aria-hidden /></span>}
                 {profileError && <div className="ferr" role="alert" style={{ display: "block", marginTop: 10 }}>{profileError}</div>}
                 <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--border)", display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <Link className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} href="/billing">Manage Billing</Link>
-                  <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={downloadExport}><Download size={15} strokeWidth={1.75} aria-hidden /> Download my data (JSON)</button>
+                  <Link className="btn-s btn-sm" href="/billing">Manage billing</Link>
+                  <button className="btn-s btn-sm" onClick={downloadExport}><Download size={15} strokeWidth={1.75} aria-hidden /> Download my data (JSON)</button>
                 </div>
                 <div className="delete-zone" style={{ maxWidth: 580 }}>
-                  <h4><TriangleAlert size={16} strokeWidth={1.75} aria-hidden /> Delete Account</h4>
+                  <h4><TriangleAlert size={16} strokeWidth={1.75} aria-hidden /> Delete account</h4>
                   <p>
                     Your account is deactivated right away. After 48 hours, your profile, login, messages you sent, and
                     notifications are permanently erased. Your past listings and the hours you verified are kept so your
                     volunteers’ records stay intact.
-                    You must deactivate all active listings first (the Deactivate button on each card in My Listings and Listing History).{" "}
+                    You must deactivate all active listings first (the Deactivate button on each card in My listings and Listing history).{" "}
                     <strong>Log in within 48 hours to restore your account.</strong>
                   </p>
                   {user.plan === "pro" && (
                     <p>
-                      <strong>Your organization is on the Pro plan.</strong> If no one signs in with this
+                      <strong>Your organization is on the Pro plan.</strong> If no one logs in with this
                       account&rsquo;s main email ({user.email}) and chooses Restore within 48 hours, the deletion
                       becomes final: your Pro subscription is cancelled and the rest of your current Pro month is
                       lost. It is not refunded.
@@ -797,11 +798,10 @@ export default function OrgDashboardPage() {
                   </div>
                   {deleteError && <div className="ferr" role="alert" style={{ display: "block" }}>{deleteError}</div>}
                   <button
-                    className="btn-s"
-                    style={{ color: "var(--red)", borderColor: "var(--red)", padding: "9px 18px", fontSize: ".83rem" }}
+                    className="btn-s btn-sm btn-danger"
                     disabled={delConfirm !== "DELETE" || !delPassword || deleting}
                     onClick={deleteAccount}
-                  >{deleting ? "Deleting…" : "Delete Organization Account"}</button>
+                  >{deleting ? "Deleting…" : "Delete organization account"}</button>
                 </div>
               </div>
             </div>

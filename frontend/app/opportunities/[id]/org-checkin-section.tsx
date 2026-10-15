@@ -1,5 +1,6 @@
 "use client";
 
+import { errorText } from "@/lib/errors";
 import { useState } from "react";
 
 import { ApiError, api } from "@/lib/api";
@@ -56,7 +57,7 @@ export function OrgCheckinSection({ opp }: { opp: Opportunity }) {
       const res = await api.createCheckinCode(opp.id, date, token);
       setGenerated({ date, code: res.code });
     } catch (err) {
-      setSubmitError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setSubmitError(errorText(err, "We could not create the check-in code. Check your connection and try again."));
     } finally {
       setBusy(false);
     }
@@ -93,11 +94,10 @@ export function OrgCheckinSection({ opp }: { opp: Opportunity }) {
               ))}
             </select>
             <button
-              className="btn-p"
+              className="btn-p btn-sm"
               type="button"
               onClick={generate}
               disabled={busy || !date}
-              style={{ padding: "9px 18px", fontSize: ".83rem" }}
             >
               {busy ? "…" : "Generate"}
             </button>
@@ -107,7 +107,7 @@ export function OrgCheckinSection({ opp }: { opp: Opportunity }) {
             <p className="ferr" role="alert" style={{ marginBottom: 0 }}>
               {loadError instanceof ApiError && loadError.status >= 400 && loadError.status < 500
                 ? loadError.message
-                : "Couldn't load this listing's dates."}
+                : "Could not load this listing's dates."}
             </p>
             {/* Was "Reload to try again." — the component had no way back short of a
                 full page load, which also threw away everything else on the page. */}
@@ -115,7 +115,7 @@ export function OrgCheckinSection({ opp }: { opp: Opportunity }) {
               className="btn-s"
               type="button"
               onClick={retry}
-              style={{ padding: "8px 16px", fontSize: ".8rem" }}
+              style={{ padding: "8px 16px", fontSize: "var(--fs-label)" }}
             >
               Retry
             </button>
@@ -127,9 +127,9 @@ export function OrgCheckinSection({ opp }: { opp: Opportunity }) {
         )}
 
         {generated && (
-          <p style={{ fontSize: ".84rem", color: "var(--text)", margin: 0 }}>
+          <p style={{ fontSize: "var(--fs-label)", color: "var(--text)", margin: 0 }}>
             Code for {fmtDateKey(generated.date, { weekday: "short", month: "short", day: "numeric" })}:{" "}
-            <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "1.05rem", fontWeight: 700, letterSpacing: ".18em", color: "var(--green)" }}>
+            <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "var(--fs-body)", fontWeight: 700, letterSpacing: ".18em", color: "var(--green)" }}>
               {generated.code}
             </span>
           </p>

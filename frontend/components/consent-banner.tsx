@@ -3,7 +3,8 @@
 import { TriangleAlert } from "lucide-react";
 import { useState } from "react";
 
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
+import { errorText } from "@/lib/errors";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { CONSENT_GATED_COPY, INVITE_COPY, consentGated, inviteState } from "@/lib/consent";
 
@@ -30,7 +31,7 @@ export function ConsentBanner() {
       // it failed once it has gone out.
       await refresh();
     } catch (err) {
-      setMessage(err instanceof ApiError ? err.message : "Couldn't resend the email.");
+      setMessage(errorText(err, "Could not resend the email."));
     } finally {
       setBusy(false);
     }
@@ -43,20 +44,19 @@ export function ConsentBanner() {
     try {
       await refresh();
     } catch {
-      setMessage("Couldn't check your status. Try again.");
+      setMessage("Could not check your status. Try again.");
     }
   }
 
   const heading =
     status === "pending"
-      ? "Waiting on your parent/guardian's approval"
+      ? "Waiting on your parent or guardian's approval"
       : status === "declined"
-        ? "Your parent/guardian declined approval"
-        : "Your parent/guardian's approval was revoked";
+        ? "Your parent or guardian declined approval"
+        : "Your parent or guardian's approval was revoked";
 
   // v1 editorial styling (.consent-zone), not shadcn/Tailwind: this renders inside
   // the .v1 dashboard shell, where a generic amber utility box reads as foreign.
-  const btn = { padding: "9px 18px", fontSize: ".83rem" } as const;
   return (
     <div className="consent-zone">
       <h4>
@@ -75,11 +75,11 @@ export function ConsentBanner() {
       </p>
       {status === "pending" && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          <button className="btn-p" style={btn} onClick={resend} disabled={busy}>
+          <button className="btn-p btn-sm" onClick={resend} disabled={busy}>
             {busy ? "Sending…" : "Resend approval email"}
           </button>
-          <button className="btn-s" style={btn} onClick={recheck}>
-            I&apos;ve been approved. Refresh
+          <button className="btn-s btn-sm" onClick={recheck}>
+            I have been approved. Refresh
           </button>
         </div>
       )}

@@ -1,5 +1,6 @@
 "use client";
 
+import { errorText } from "@/lib/errors";
 import { TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
@@ -8,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { CONSENT_GATED_COPY, consentGated } from "@/lib/consent";
 import { localDateKey } from "@/lib/event-time";
@@ -53,7 +54,7 @@ export default function MyHoursPage() {
   const [ciCode, setCiCode] = useState("");
   // Success and failure were ONE `formMsg` until this conversion, rendered in the
   // muted body colour — so "Something went wrong." looked exactly like "Hours
-  // submitted for verification." Two variables, and the failure gets `.ferr`.
+  // submitted for verification." Two variables, and the failure gets `.alert-danger`.
   const [formMsg, setFormMsg] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   // One flag for both forms (they share one message line). Before 2026-09-22 the
@@ -110,7 +111,7 @@ export default function MyHoursPage() {
     } catch (err) {
       // Was `try`/`finally` with NO catch: a failed appeal showed the user
       // nothing at all and raised an unhandled promise rejection.
-      setFormError(err instanceof ApiError ? err.message : "Couldn't submit that appeal.");
+      setFormError(errorText(err, "Could not submit that appeal."));
     } finally {
       setBusyId(null);
     }
@@ -130,7 +131,7 @@ export default function MyHoursPage() {
       // Self-reported hours land as PENDING; goal progress re-derives from hours.
       void mutateHours();
     } catch (err) {
-      setFormError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setFormError(errorText(err, "We could not save your hours. Check your connection and try again."));
     } finally {
       setSubmitting(false);
     }
@@ -151,7 +152,7 @@ export default function MyHoursPage() {
       // from hours, so re-reading hours is enough.
       void mutateHours();
     } catch (err) {
-      setFormError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setFormError(errorText(err, "We could not check you in. Check your connection and try again."));
     } finally {
       setSubmitting(false);
     }
@@ -177,7 +178,7 @@ export default function MyHoursPage() {
     <main className="mx-auto flex max-w-2xl flex-col gap-6 p-8">
       <div>
         <span className="section-tag">Your activity</span>
-        <h1 className="section-title">My Hours</h1>
+        <h1 className="section-title">My hours</h1>
       </div>
 
       {/* Goals replace awards here (M16.3, 2026-09-27): the goals still in progress, with
@@ -207,7 +208,7 @@ export default function MyHoursPage() {
                 this line the card would keep showing figures that may have moved,
                 looking exactly as if they were current. */}
             {goalsQ.error && (
-              <p className="progress-label">Couldn&apos;t refresh — showing the last goals we loaded.</p>
+              <p className="progress-label">Could not refresh — showing the last goals we loaded.</p>
             )}
           </CardContent>
         </Card>
@@ -219,12 +220,12 @@ export default function MyHoursPage() {
       {appsQ.error && (
         <Card>
           <CardContent className="flex flex-col items-start gap-2 pt-6 text-sm">
-            <p className="ferr" role="alert" style={{ marginBottom: 0 }}>
-              Couldn&apos;t load your opportunities, so check-in and self-report aren&apos;t available.
+            <p className="alert-danger" role="alert" style={{ marginBottom: 0 }}>
+              Could not load your opportunities, so check-in and self-report are not available.
             </p>
-            <button className="btn-s" style={{ padding: "8px 16px", fontSize: ".8rem" }} onClick={retryAll}>
+            <Button variant="outline" size="sm" onClick={retryAll}>
               Retry
-            </button>
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -373,7 +374,7 @@ export default function MyHoursPage() {
               </Button>
             </div>
             {offsite.message && <p className="text-sm text-muted-foreground">{offsite.message}</p>}
-            {offsite.error && <p className="ferr" role="alert" style={{ marginBottom: 0 }}>{offsite.error}</p>}
+            {offsite.error && <p className="alert-danger" role="alert" style={{ marginBottom: 0 }}>{offsite.error}</p>}
           </form>
         </CardContent>
       </Card>
@@ -381,7 +382,7 @@ export default function MyHoursPage() {
       {/* ONE render site for write failures. It sits outside the forms card
           because Appeal lives in the entry list below and can fail while the
           card is not rendered at all. */}
-      {formError && <p className="ferr" role="alert" style={{ marginBottom: 0 }}>{formError}</p>}
+      {formError && <p className="alert-danger" role="alert" style={{ marginBottom: 0 }}>{formError}</p>}
 
       {hoursQ.loading && <p className="empty-state">Loading…</p>}
 
@@ -391,11 +392,11 @@ export default function MyHoursPage() {
       {!hoursQ.loading && hoursQ.error && hoursQ.data === undefined && (
         <div className="load-error">
           <div className="empty-icon"><TriangleAlert size={40} strokeWidth={1.75} aria-hidden /></div>
-          <div className="ferr" role="alert">Couldn&apos;t load your hours. Check your connection and try again.</div>
+          <div className="alert-danger" role="alert">Could not load your hours. Check your connection and try again.</div>
           <div>
-            <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={retryAll}>
+            <Button variant="outline" size="sm" onClick={retryAll}>
               Retry
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -407,11 +408,11 @@ export default function MyHoursPage() {
       {hoursQ.error && hoursQ.data !== undefined && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <p className="progress-label" style={{ marginTop: 0 }}>
-            Couldn&apos;t refresh — these are the hours we last loaded.
+            Could not refresh — these are the hours we last loaded.
           </p>
-          <button className="btn-s" style={{ padding: "6px 14px", fontSize: ".78rem" }} onClick={retryAll}>
+          <Button variant="outline" size="sm" onClick={retryAll}>
             Retry
-          </button>
+          </Button>
         </div>
       )}
       {/* `!hoursQ.error` matters: an empty list and a FAILED load are different
@@ -430,7 +431,7 @@ export default function MyHoursPage() {
                   {entry.hours}h · {SOURCE_LABEL[entry.source] ?? entry.source}
                 </p>
                 {entry.status === "denied" && entry.deny_note && (
-                  <p className="text-[0.78rem] text-muted-foreground">Reason: {entry.deny_note}</p>
+                  <p className="text-[length:var(--fs-micro)] text-muted-foreground">Reason: {entry.deny_note}</p>
                 )}
               </div>
               <div className="flex shrink-0 flex-col items-end gap-2">

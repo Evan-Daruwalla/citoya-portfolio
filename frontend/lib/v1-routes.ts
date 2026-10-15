@@ -1,7 +1,17 @@
+import type { User } from "@/lib/types";
+
 // Routes that render their own exact-v1 chrome (V1Shell = v1 nav + footer).
 // The global SiteHeader/SiteFooter suppress themselves on these so there's no
 // double nav. Add a route here the moment its page is converted to v1.
-export const V1_ROUTES = ["/", "/discover", "/dashboard", "/applicants", "/leaderboard", "/login", "/register", "/welcome", "/forgot", "/reset", "/pricing", "/for-organizations", "/donate", "/privacy", "/terms", "/portfolio", "/admin", "/hours/report"];
+export const V1_ROUTES = ["/", "/discover", "/dashboard", "/applicants", "/leaderboard", "/login", "/register", "/welcome", "/forgot", "/reset", "/pricing", "/for-organizations", "/donate", "/privacy", "/terms", "/portfolio", "/admin", "/hours/report", "/security", "/logout"];
+
+// Each account's home: admin -> /admin, org -> /applicants, student -> /dashboard, signed out
+// -> /login. Shared by the login redirect, the nav's Dashboard link, /security's "Back to
+// dashboard" and /logout's Cancel so they never point at different places.
+export function dashboardPath(user: Pick<User, "role" | "is_admin"> | null | undefined): string {
+  if (user?.is_admin) return "/admin";
+  return user?.role === "org" ? "/applicants" : user?.role === "student" ? "/dashboard" : "/login";
+}
 
 export function isV1Route(pathname: string): boolean {
   if (V1_ROUTES.includes(pathname)) return true;
@@ -10,5 +20,7 @@ export function isV1Route(pathname: string): boolean {
   if (/^\/opportunities\/[^/]+$/.test(pathname) && pathname !== "/opportunities/new") return true;
   // Public portfolio transcript by id (/portfolio/<id>) — v1-converted.
   if (/^\/portfolio\/[^/]+$/.test(pathname)) return true;
+  // Public organization page (/organizations/<id>) wraps itself in V1Shell.
+  if (/^\/organizations\/[^/]+$/.test(pathname)) return true;
   return false;
 }

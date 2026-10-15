@@ -7,7 +7,7 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { usePublicQuery } from "@/lib/use-api";
 
-const MEDAL_COLORS = ["var(--gold)", "#9ca3af", "#b45309"];
+const MEDAL_COLORS = ["var(--gold)", "var(--c-gray-400)", "var(--c-amber-dark)"];
 
 export default function LeaderboardPage() {
   const { user } = useAuth();
@@ -34,7 +34,7 @@ export default function LeaderboardPage() {
   return (
     <V1Shell>
       <div className="section">
-        <div className="sec-tag">Community Impact</div>
+        <div className="sec-tag">Community impact</div>
         <h2 className="sec-title">The leaderboard of good</h2>
         <p className="sec-sub" style={{ marginBottom: 30 }}>
           Verified service hours across the whole Citoya community. Only first names and last initials are ever shown.
@@ -48,7 +48,7 @@ export default function LeaderboardPage() {
           // false-empty-state bug the applications page had.
           <div className="empty">
             <div className="empty-icon"><Rocket size={40} strokeWidth={1.75} aria-hidden /></div>
-            Couldn&apos;t load the leaderboard. Check your connection and try again.
+            Could not load the leaderboard. Check your connection and try again.
             <div style={{ marginTop: 14 }}>
               <button className="btn-s" onClick={retry}>Retry</button>
             </div>
@@ -56,15 +56,15 @@ export default function LeaderboardPage() {
         ) : (
           <>
             <div className="lb-band">
-              <div className="lb-stat"><div className="lb-stat-num">{community.totalHours.toLocaleString()}</div><div className="lb-stat-label">Verified Hours</div></div>
+              <div className="lb-stat"><div className="lb-stat-num">{community.totalHours.toLocaleString()}</div><div className="lb-stat-label">Verified hours</div></div>
               <div className="lb-stat"><div className="lb-stat-num">{community.students.toLocaleString()}</div><div className="lb-stat-label">Students</div></div>
               <div className="lb-stat"><div className="lb-stat-num">{community.orgs}</div><div className="lb-stat-label">Organizations</div></div>
-              <div className="lb-stat"><div className="lb-stat-num">{community.events.toLocaleString()}</div><div className="lb-stat-label">Service Entries</div></div>
+              <div className="lb-stat"><div className="lb-stat-num">{community.events.toLocaleString()}</div><div className="lb-stat-label">Service entries</div></div>
             </div>
 
             <div className="lb-cols">
               <div>
-                <h3 style={{ color: "var(--dark)", marginBottom: 14 }}><Trophy size={18} strokeWidth={1.75} aria-hidden /> Top Volunteers</h3>
+                <h3 style={{ color: "var(--dark)", marginBottom: 14 }}><Trophy size={18} strokeWidth={1.75} aria-hidden /> Top volunteers</h3>
                 <div className="lb-school" style={{ marginBottom: 10 }}>Top 25</div>
                 {entries.length ? (
                   entries.map((v, i) => (
@@ -79,7 +79,7 @@ export default function LeaderboardPage() {
                 )}
               </div>
               <div>
-                <h3 style={{ color: "var(--dark)", marginBottom: 14 }}><School size={18} strokeWidth={1.75} aria-hidden /> Top Schools</h3>
+                <h3 style={{ color: "var(--dark)", marginBottom: 14 }}><School size={18} strokeWidth={1.75} aria-hidden /> Top schools</h3>
                 <div className="empty">Add your school to your profile to put it on the board.</div>
                 {!user && (
                   <div style={{ marginTop: 18, textAlign: "center" }}>

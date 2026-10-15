@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Globe, MapPin, RefreshCw, Search, Shuffle, TriangleAlert, Users } from "lucide-react";
+import { Clock, Globe, Heart, MapPin, RefreshCw, Search, Shuffle, Star, TriangleAlert, Users, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -95,10 +95,10 @@ export default function DiscoverPage() {
     setSaveError(null);
     if (savedIds.has(id)) {
       void mutateSaved(prev.filter((x) => x !== id), { revalidate: false });
-      api.unsave(id, token).catch(() => undo("Couldn't remove that bookmark. Try again."));
+      api.unsave(id, token).catch(() => undo("Could not remove that bookmark. Try again."));
     } else {
       void mutateSaved([...prev, id], { revalidate: false });
-      api.save(id, token).catch(() => undo("Couldn't save that bookmark. Try again."));
+      api.save(id, token).catch(() => undo("Could not save that bookmark. Try again."));
     }
   }
 
@@ -112,7 +112,7 @@ export default function DiscoverPage() {
     <V1Shell>
       <div className="section">
         <div style={{ marginBottom: 28 }}>
-          <div className="sec-tag">Volunteer Opportunities</div>
+          <div className="sec-tag">Volunteer opportunities</div>
           <h2 className="sec-title">Find your next opportunity</h2>
           <p className="sec-sub">Browse local organizations and their open opportunities. Filter by category, commitment, and format to find something that fits.</p>
         </div>
@@ -148,7 +148,7 @@ export default function DiscoverPage() {
             value={category}
             onChange={(e) => setCategory(e.target.value)}
           >
-            <option value="">All Categories</option>
+            <option value="">All categories</option>
             {CATEGORIES.map((c) => (
               <option key={c}>{c}</option>
             ))}
@@ -159,7 +159,7 @@ export default function DiscoverPage() {
             value={commitment}
             onChange={(e) => setCommitment(e.target.value)}
           >
-            <option value="">Any Commitment</option>
+            <option value="">Any commitment</option>
             <option>One-time</option>
             <option>Weekly</option>
             <option>Monthly</option>
@@ -170,9 +170,9 @@ export default function DiscoverPage() {
             value={format}
             onChange={(e) => setFormat(e.target.value)}
           >
-            <option value="">In-Person or Remote</option>
+            <option value="">In-person or remote</option>
             <option value="Remote">Remote</option>
-            <option value="In-Person">In-Person</option>
+            <option value="In-Person">In-person</option>
             <option value="Hybrid">Hybrid</option>
           </select>
         </div>
@@ -190,7 +190,7 @@ export default function DiscoverPage() {
               <span key={i} className={`filter-chip ${c.cls}`}>
                 {c.label}
                 <button onClick={c.clear} title="Remove filter" aria-label="Remove filter">
-                  ✕
+                  <X size={16} strokeWidth={1.75} aria-hidden />
                 </button>
               </span>
             ))}
@@ -217,9 +217,9 @@ export default function DiscoverPage() {
         ) : error ? (
           <div className="load-error">
             <div className="empty-icon"><TriangleAlert size={40} strokeWidth={1.75} aria-hidden /></div>
-            <div className="ferr" role="alert">Couldn&apos;t load opportunities. Check your connection and try again.</div>
+            <div className="ferr" role="alert">Could not load opportunities. Check your connection and try again.</div>
             <div>
-              <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={loadOpps}>
+              <button className="btn-s btn-sm" onClick={loadOpps}>
                 Retry
               </button>
             </div>
@@ -249,7 +249,7 @@ export default function DiscoverPage() {
                       <CategoryIcon category={o.category} size={20} />
                     </div>
                     <div className="badges-row">
-                      {o.featured && <span className="badge badge-featured">★ Featured</span>}
+                      {o.featured && <span className="badge badge-featured"><Star size={16} strokeWidth={1.75} aria-hidden /> Featured</span>}
                     </div>
                   </div>
                   <div className="oc-title">{o.title}</div>
@@ -274,11 +274,11 @@ export default function DiscoverPage() {
                     ) : isHybrid ? (
                       <span className="format-pip hybrid"><Shuffle size={12} strokeWidth={1.75} aria-hidden />Hybrid</span>
                     ) : (
-                      <span className="format-pip inperson"><MapPin size={12} strokeWidth={1.75} aria-hidden />In-Person</span>
+                      <span className="format-pip inperson"><MapPin size={12} strokeWidth={1.75} aria-hidden />In-person</span>
                     )}
                   </div>
                   <div className="oc-footer">
-                    <span style={{ fontSize: ".73rem", color: "var(--muted)" }}>{relDate(o.start_time, o.timezone)}</span>
+                    <span style={{ fontSize: "var(--fs-micro)", color: "var(--muted)" }}>{relDate(o.start_time, o.timezone)}</span>
                     <div style={{ display: "flex", gap: 6 }}>
                       {(!user || user.role === "student") && (
                         <button
@@ -287,11 +287,11 @@ export default function DiscoverPage() {
                           title="Save for later"
                           aria-label="Save opportunity for later"
                         >
-                          {savedIds.has(o.id) ? "♥" : "♡"}
+                          <Heart size={16} strokeWidth={1.75} aria-hidden fill={savedIds.has(o.id) ? "currentColor" : "none"} />
                         </button>
                       )}
-                      <button className="btn-s" style={{ padding: "7px 14px", fontSize: ".78rem" }}>
-                        View &amp; Apply
+                      <button className="btn-s btn-sm" style={{ fontSize: "var(--fs-micro)" }}>
+                        View and apply
                       </button>
                     </div>
                   </div>

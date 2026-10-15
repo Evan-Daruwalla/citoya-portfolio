@@ -14,7 +14,7 @@
  * `'unsafe-inline'` on purpose (`proxy.ts`), while `script-src` does not.
  *
  * Hex values are copied from the `.v1` block in `app/v1.css` — --white #f7f7f1,
- * --text #21352a, --muted #627d6d, --green #175c41, --border #dde7de. If that
+ * --text #21352a, --muted #566f61, --green #175c41, --border #dde7de. If that
  * palette ever changes, this file does not follow automatically.
  */
 export default function GlobalError({
@@ -44,17 +44,17 @@ export default function GlobalError({
           <p
             style={{
               margin: "0 0 18px",
-              fontSize: "1.15rem",
+              fontSize: "1.125rem",
               fontWeight: 700,
               letterSpacing: "-0.01em",
             }}
           >
             Citoya
           </p>
-          <h1 style={{ fontSize: "1.5rem", margin: "0 0 10px", letterSpacing: "-0.01em" }}>
-            Citoya isn&apos;t loading
+          <h1 style={{ fontSize: "1.375rem", margin: "0 0 10px", letterSpacing: "-0.01em" }}>
+            Citoya is not loading
           </h1>
-          <p style={{ margin: "0 0 24px", color: "#627d6d", lineHeight: 1.7, fontSize: ".92rem" }}>
+          <p style={{ margin: "0 0 24px", color: "#566f61", lineHeight: 1.7, fontSize: ".875rem" }}>
             Something failed before the site could start. This is on our side, not yours —
             your account and your logged hours are unaffected.
           </p>
@@ -67,7 +67,7 @@ export default function GlobalError({
               color: "#fff",
               border: "none",
               borderRadius: 6,
-              fontSize: ".92rem",
+              fontSize: ".875rem",
               fontWeight: 600,
               cursor: "pointer",
             }}
@@ -75,7 +75,7 @@ export default function GlobalError({
             Reload
           </button>
           {error.digest ? (
-            <p style={{ marginTop: 22, fontSize: ".78rem", color: "#627d6d" }}>
+            <p style={{ marginTop: 22, fontSize: ".75rem", color: "#566f61" }}>
               Reference: {error.digest}
             </p>
           ) : null}

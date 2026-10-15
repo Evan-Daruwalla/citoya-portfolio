@@ -24,6 +24,13 @@ const nextConfig = {
           // and takes effect automatically once prod TLS is live (M11.3). No
           // `preload` — that's a hard-to-undo registry commitment, Evan's call.
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
+          // Nothing here asks for a camera, microphone, location, payment sheet or USB device
+          // (no `navigator.geolocation` anywhere), so turn them off for the page and any
+          // frame in it (2026-10-12, audit 2026-10-11 #25).
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+          },
         ],
       },
     ];

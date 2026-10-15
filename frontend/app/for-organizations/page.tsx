@@ -10,7 +10,7 @@ export default function ForOrganizationsPage() {
     <V1Shell>
       <div className="section">
         <div style={{ maxWidth: 680 }}>
-          <div className="sec-tag">For Organizations</div>
+          <div className="sec-tag">For organizations</div>
           <h2 className="sec-title">Reach motivated student volunteers</h2>
           <p className="sec-sub" style={{ maxWidth: 600 }}>
             Post volunteer opportunities, manage your roster, verify hours, and message students directly.
@@ -30,10 +30,10 @@ export default function ForOrganizationsPage() {
         </div>
 
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <Link className="btn-p" href="/register">Register Your Organization</Link>
-          <Link className="btn-s" href="/pricing">View Pricing →</Link>
+          <Link className="btn-p" href="/register">Register your organization</Link>
+          <Link className="btn-s" href="/pricing">View pricing →</Link>
         </div>
-        <p style={{ fontSize: ".8rem", color: "var(--muted)", marginTop: 14 }}>
+        <p style={{ fontSize: "var(--fs-label)", color: "var(--muted)", marginTop: 14 }}>
           Start free with up to 3 active listings. Analytics are free for every organization. Upgrade to Pro for unlimited listings and featured placement.
         </p>
       </div>

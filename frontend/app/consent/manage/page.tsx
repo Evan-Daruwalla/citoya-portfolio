@@ -1,10 +1,11 @@
 "use client";
 
+import { errorText } from "@/lib/errors";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
 import type { ConsentManageContext } from "@/lib/types";
 
 import { GuardianDataActions } from "./data-actions";
@@ -59,9 +60,10 @@ export default function ConsentManagePage() {
       .then(setCtx)
       .catch((err) =>
         setError(
-          err instanceof ApiError
-            ? err.message
-            : "This link is invalid or missing its access code. Use the link from your email."
+          errorText(
+            err,
+            "This link is invalid or missing its access code. Use the link from your email."
+          )
         )
       );
   }, []);
@@ -73,7 +75,7 @@ export default function ConsentManagePage() {
       const res = await api.revokeConsent(tokenRef.current);
       setDone(res.message);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setError(errorText(err, "We could not revoke approval. Check your connection and try again."));
     } finally {
       setBusy(false);
     }
@@ -115,7 +117,7 @@ export default function ConsentManagePage() {
               </p>
               {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
               {ctx.status === "revoked" ? (
-                <p className="text-sm text-muted-foreground">You&apos;ve already revoked approval.</p>
+                <p className="text-sm text-muted-foreground">You have already revoked approval.</p>
               ) : !confirming ? (
                 <Button variant="outline" onClick={() => setConfirming(true)}>
                   Revoke consent

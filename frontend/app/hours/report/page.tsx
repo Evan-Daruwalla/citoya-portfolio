@@ -12,6 +12,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef } from "react";
 
 import { V1Shell } from "@/components/v1/v1-shell";
+import logo from "@/public/logo.png";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { fmtDateKey } from "@/lib/event-time";
@@ -66,7 +67,7 @@ function HoursReport() {
         </div>
 
         <header className="hr-head">
-          <Image src="/logo.png" alt="" width={34} height={34} unoptimized />
+          <Image src={logo} alt="" width={34} height={34} unoptimized />
           <div>
             <h1 className="hr-title">Volunteer hours</h1>
             <p className="hr-sub">{user.full_name || user.email} &middot; generated {generated} from Citoya</p>
@@ -75,7 +76,7 @@ function HoursReport() {
 
         {hoursQ.error && hoursQ.data === undefined ? (
           <div className="load-error">
-            <div className="ferr" role="alert">Couldn&apos;t load your hours, so there is nothing to print yet.</div>
+            <div className="ferr" role="alert">Could not load your hours, so there is nothing to print yet.</div>
             <button className="btn-s" onClick={hoursQ.retry}>Retry</button>
           </div>
         ) : hoursQ.data === undefined ? (

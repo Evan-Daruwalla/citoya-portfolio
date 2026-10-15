@@ -18,18 +18,18 @@ import {
 
 type CategoryMeta = { Icon: LucideIcon; bg: string; fg: string };
 
-const FALLBACK: CategoryMeta = { Icon: Landmark, bg: "#e8f5ef", fg: "#175c41" };
+const FALLBACK: CategoryMeta = { Icon: Landmark, bg: "var(--c-cat-fallback-bg)", fg: "var(--c-cat-fallback-fg)" };
 
 const CATEGORY_META: Record<string, CategoryMeta> = {
-  Education: { Icon: BookOpen, bg: "#eef4ff", fg: "#2563eb" },
-  Environment: { Icon: Sprout, bg: "#e8f5ef", fg: "#175c41" },
-  Health: { Icon: HeartPulse, bg: "#fdecef", fg: "#be123c" },
-  Animals: { Icon: PawPrint, bg: "#fef3e0", fg: "#c2410c" },
-  "Food & Hunger": { Icon: Apple, bg: "#fef2f2", fg: "#dc2626" },
-  "Arts & Culture": { Icon: Palette, bg: "#f5edff", fg: "#6b21a8" },
-  Community: { Icon: Handshake, bg: "#e8f5ef", fg: "#175c41" },
-  STEM: { Icon: FlaskConical, bg: "#fdf5e0", fg: "#d97706" },
-  Agriculture: { Icon: Wheat, bg: "#eef7e6", fg: "#4d7c0f" },
+  Education: { Icon: BookOpen, bg: "var(--c-cat-education-bg)", fg: "var(--c-cat-education-fg)" },
+  Environment: { Icon: Sprout, bg: "var(--c-cat-environment-bg)", fg: "var(--c-cat-environment-fg)" },
+  Health: { Icon: HeartPulse, bg: "var(--c-cat-health-bg)", fg: "var(--c-cat-health-fg)" },
+  Animals: { Icon: PawPrint, bg: "var(--c-cat-animals-bg)", fg: "var(--c-cat-animals-fg)" },
+  "Food & Hunger": { Icon: Apple, bg: "var(--c-cat-food-bg)", fg: "var(--c-cat-food-fg)" },
+  "Arts & Culture": { Icon: Palette, bg: "var(--c-cat-arts-bg)", fg: "var(--c-cat-arts-fg)" },
+  Community: { Icon: Handshake, bg: "var(--c-cat-community-bg)", fg: "var(--c-cat-community-fg)" },
+  STEM: { Icon: FlaskConical, bg: "var(--c-cat-stem-bg)", fg: "var(--c-cat-stem-fg)" },
+  Agriculture: { Icon: Wheat, bg: "var(--c-cat-agriculture-bg)", fg: "var(--c-cat-agriculture-fg)" },
 };
 
 export function getCategoryMeta(category?: string | null): CategoryMeta {

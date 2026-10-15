@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Clock, Globe, MapPin, RefreshCw, Shuffle, Timer, Users, WifiOff } from "lucide-react";
+import { CalendarDays, Clock, Globe, MapPin, RefreshCw, Shuffle, Star, Timer, Users, WifiOff } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -9,6 +9,7 @@ import { ReportConcern } from "@/components/report-concern";
 import { ReviewsSection } from "@/components/reviews-section";
 import { V1Shell } from "@/components/v1/v1-shell";
 import { ApiError, api } from "@/lib/api";
+import { errorText } from "@/lib/errors";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { CONSENT_GATED_COPY, consentGated } from "@/lib/consent";
 import { fmtEventDateTime } from "@/lib/event-time";
@@ -63,7 +64,7 @@ export default function OpportunityDetailPage() {
       await api.setFeatured(opp.id, !opp.featured, token);
       retry();
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Could not update the listing.");
+      setActionError(errorText(err, "Could not update the listing."));
     } finally {
       setFeaturing(false);
     }
@@ -78,7 +79,7 @@ export default function OpportunityDetailPage() {
   return (
     <V1Shell>
       <Link href="/discover" className="back-link">
-        ← Back to Opportunities
+        ← Back to opportunities
       </Link>
 
       {actionError && <div className="detail-wrap"><p style={{ color: "var(--red)" }}>{actionError}</p></div>}
@@ -98,7 +99,7 @@ export default function OpportunityDetailPage() {
             <div className="empty-icon"><WifiOff size={40} strokeWidth={1.75} aria-hidden /></div>
             {error instanceof ApiError && error.status >= 400 && error.status < 500
               ? error.message
-              : "Couldn't load this opportunity. Check your connection and try again."}
+              : "Could not load this opportunity. Check your connection and try again."}
             <div style={{ marginTop: 14 }}>
               <button className="btn-s" onClick={retry}>Retry</button>
             </div>
@@ -117,18 +118,18 @@ export default function OpportunityDetailPage() {
             </div>
             <div className="mbody">
               <div className="badges-row" style={{ marginBottom: 14 }}>
-                {opp.featured && <span className="badge badge-featured">★ Featured</span>}
-                {/* audit DY Low 32, 2026-10-07: show the age limit instead of always "Open to All". */}
-                <span className="badge badge-verified">{opp.min_age ? `Ages ${opp.min_age}+` : "Open to All"}</span>
+                {opp.featured && <span className="badge badge-featured"><Star size={16} strokeWidth={1.75} aria-hidden /> Featured</span>}
+                {/* audit DY Low 32, 2026-10-07: show the age limit instead of always "Open to all". */}
+                <span className="badge badge-verified">{opp.min_age ? `Ages ${opp.min_age}+` : "Open to all"}</span>
               </div>
 
               <div style={{ marginBottom: 12 }}>
                 {isRemote ? (
-                  <span className="format-pip remote" style={{ fontSize: ".8rem", padding: "4px 12px" }}><Globe size={12} strokeWidth={1.75} aria-hidden />Remote</span>
+                  <span className="format-pip remote" style={{ fontSize: "var(--fs-label)", padding: "4px 12px" }}><Globe size={12} strokeWidth={1.75} aria-hidden />Remote</span>
                 ) : isHybrid ? (
-                  <span className="format-pip hybrid" style={{ fontSize: ".8rem", padding: "4px 12px" }}><Shuffle size={12} strokeWidth={1.75} aria-hidden />Hybrid</span>
+                  <span className="format-pip hybrid" style={{ fontSize: "var(--fs-label)", padding: "4px 12px" }}><Shuffle size={12} strokeWidth={1.75} aria-hidden />Hybrid</span>
                 ) : (
-                  <span className="format-pip inperson" style={{ fontSize: ".8rem", padding: "4px 12px" }}><MapPin size={12} strokeWidth={1.75} aria-hidden />In-Person</span>
+                  <span className="format-pip inperson" style={{ fontSize: "var(--fs-label)", padding: "4px 12px" }}><MapPin size={12} strokeWidth={1.75} aria-hidden />In-person</span>
                 )}
               </div>
 
@@ -145,13 +146,13 @@ export default function OpportunityDetailPage() {
 
               <div className="detail-label">Description</div>
               <p className="detail-desc">{opp.description}</p>
-              <p style={{ fontSize: ".78rem", color: "var(--muted)", marginTop: 0 }}>
+              <p style={{ fontSize: "var(--fs-micro)", color: "var(--muted)", marginTop: 0 }}>
                 <ReportConcern subject={`Report a listing: ${opp.title} (${opp.id})`} label="Report this listing" />
               </p>
 
               {opp.skills.length > 0 && (
                 <>
-                  <div className="detail-label">Skills Needed</div>
+                  <div className="detail-label">Skills needed</div>
                   <div className="badges-row" style={{ marginBottom: 16 }}>
                     {opp.skills.map((s) => (
                       <span key={s} className="badge badge-skill">
@@ -174,7 +175,7 @@ export default function OpportunityDetailPage() {
           {/* Decision 13A (2026-10-09): the owner edits a listing on the posting form. */}
           {user?.role === "org" && user.id === opp.org_id && (
             <div style={{ marginTop: 16 }}>
-              <Link className="btn-s" href={`/opportunities/new?edit=${encodeURIComponent(opp.id)}`} style={{ padding: "9px 18px", fontSize: ".83rem", textDecoration: "none" }}>
+              <Link className="btn-s btn-sm" href={`/opportunities/new?edit=${encodeURIComponent(opp.id)}`} style={{ textDecoration: "none" }}>
                 Edit listing
               </Link>
             </div>
@@ -184,8 +185,8 @@ export default function OpportunityDetailPage() {
             <div className="modal-card" style={{ marginTop: 16 }}>
               <div className="mbody" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                 <div>
-                  <div style={{ fontWeight: 600, color: "var(--dark)", fontSize: ".9rem" }}>Featured listing</div>
-                  <div style={{ fontSize: ".8rem", color: "var(--muted)" }}>
+                  <div style={{ fontWeight: 600, color: "var(--dark)", fontSize: "var(--fs-sm)" }}>Featured listing</div>
+                  <div style={{ fontSize: "var(--fs-label)", color: "var(--muted)" }}>
                     {user.plan === "pro" ? "Featured listings appear first in Discover (up to 3)." : "Upgrade to Pro to feature this listing."}
                   </div>
                 </div>
@@ -195,12 +196,12 @@ export default function OpportunityDetailPage() {
                     type="button"
                     disabled={featuring}
                     onClick={toggleFeatured}
-                    style={{ padding: "9px 18px", fontSize: ".83rem", whiteSpace: "nowrap" }}
+                    style={{ whiteSpace: "nowrap" }}
                   >
                     {opp.featured ? "Unfeature" : "Feature"}
                   </button>
                 ) : (
-                  <Link className="btn-s" href="/billing" style={{ padding: "9px 18px", fontSize: ".83rem", whiteSpace: "nowrap", textDecoration: "none" }}>
+                  <Link className="btn-s btn-sm" href="/billing" style={{ whiteSpace: "nowrap", textDecoration: "none" }}>
                     Upgrade
                   </Link>
                 )}

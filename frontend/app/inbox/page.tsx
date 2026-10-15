@@ -5,7 +5,8 @@ import { useState } from "react";
 import { ReportConcern } from "@/components/report-concern";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
+import { errorText } from "@/lib/errors";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { consentGated } from "@/lib/consent";
 import { useAuthedQuery } from "@/lib/use-api";
@@ -38,7 +39,7 @@ export default function InboxPage() {
       setReplyBody("");
       void mutate();  // re-read the thread after a successful send
     } catch (err) {
-      setReplyError(err instanceof ApiError ? err.message : "Couldn't send your reply. Try again.");
+      setReplyError(errorText(err, "Could not send your reply. Try again."));
     } finally {
       setSending(false);
     }
@@ -64,7 +65,7 @@ export default function InboxPage() {
         </p>
         {gated && (
           <p className="text-sm text-muted-foreground">
-            You can read messages, but you can&apos;t reply until a parent or guardian approves your account.
+            You can read messages, but you cannot reply until a parent or guardian approves your account.
           </p>
         )}
       </div>
@@ -75,13 +76,13 @@ export default function InboxPage() {
           student with an unread org message that their inbox was empty. */}
       {!fetching && error && (
         <div className="empty-state flex flex-col items-center gap-3">
-          <span>Couldn&apos;t load your inbox. Check your connection and try again.</span>
+          <span>Could not load your inbox. Check your connection and try again.</span>
           <Button variant="outline" onClick={retry}>Retry</Button>
         </div>
       )}
 
       {!fetching && !error && messages?.length === 0 && (
-        <div className="empty-state">No messages yet.</div>
+        <div className="empty-state">No messages yet. Organizations you apply to will write here.</div>
       )}
 
       <div className="flex flex-col gap-2">

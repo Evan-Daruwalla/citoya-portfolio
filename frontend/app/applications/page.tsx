@@ -31,7 +31,7 @@ export default function MyApplicationsPage() {
     <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-10">
       <div>
         <span className="section-tag">Your activity</span>
-        <h1 className="section-title">My Applications</h1>
+        <h1 className="section-title">My applications</h1>
       </div>
 
       {loading && <p className="empty-state">Loading…</p>}
@@ -41,7 +41,7 @@ export default function MyApplicationsPage() {
           the bug this page shipped until 2026-08-31 (no .catch at all). */}
       {!loading && error && (
         <div className="empty-state flex flex-col items-center gap-3">
-          <span>Couldn&apos;t load your applications. Check your connection and try again.</span>
+          <span>Could not load your applications. Check your connection and try again.</span>
           <Button variant="outline" onClick={retry}>
             Retry
           </Button>

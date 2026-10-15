@@ -42,7 +42,7 @@ export default function SavedPage() {
           bookmarks they had none. */}
       {!fetching && error && (
         <div className="empty-state flex flex-col items-center gap-3">
-          <span>Couldn&apos;t load your bookmarks. Check your connection and try again.</span>
+          <span>Could not load your bookmarks. Check your connection and try again.</span>
           <Button variant="outline" onClick={retry}>Retry</Button>
         </div>
       )}

@@ -1,5 +1,6 @@
 "use client";
 
+import { errorText } from "@/lib/errors";
 import { Bookmark, CalendarDays, ChartColumn, ClipboardList, Clock, Download, MapPin, Plus, Settings, Target, TriangleAlert, User, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -10,7 +11,7 @@ import { CalendarFeed } from "@/components/calendar-feed";
 import { CalendarPanel } from "@/components/calendar-panel";
 import { GoalsPanel } from "@/components/goals-panel";
 import { V1Shell } from "@/components/v1/v1-shell";
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { consentGated } from "@/lib/consent";
 import { localDateKey } from "@/lib/event-time";
@@ -23,8 +24,8 @@ import { useOffsiteHours } from "@/lib/use-offsite-hours";
 type Tab = "calendar" | "history" | "log" | "saved" | "goals" | "impact" | "profile" | "account";
 const TABS: { id: Tab; label: string; Icon: LucideIcon }[] = [
   { id: "calendar", label: "Calendar", Icon: CalendarDays },
-  { id: "history", label: "Hours History", Icon: ClipboardList },
-  { id: "log", label: "Log Hours", Icon: Plus },
+  { id: "history", label: "Hours history", Icon: ClipboardList },
+  { id: "log", label: "Log hours", Icon: Plus },
   { id: "saved", label: "Saved", Icon: Bookmark },
   { id: "goals", label: "Goals", Icon: Target },
   { id: "impact", label: "Impact", Icon: ChartColumn },
@@ -129,7 +130,7 @@ export default function DashboardPage() {
       await api.deleteEndorsement(id, token);
       await endorsementsQ.mutate();
     } catch (err) {
-      setEndorseError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setEndorseError(errorText(err, "We could not remove that endorsement. Check your connection and try again."));
     } finally {
       setRemovingEndorsement(null);
     }
@@ -146,7 +147,7 @@ export default function DashboardPage() {
       setMsg("Hours submitted for verification.");
       refresh();
     } catch (err) {
-      setMsg(err instanceof ApiError ? err.message : "Something went wrong.");
+      setMsg(errorText(err, "We could not save your hours. Check your connection and try again."));
     } finally {
       setSubmitting(false);
     }
@@ -163,7 +164,7 @@ export default function DashboardPage() {
       setMsg("Checked in. Hours verified!");
       refresh();
     } catch (err) {
-      setMsg(err instanceof ApiError ? err.message : "Something went wrong.");
+      setMsg(errorText(err, "We could not check you in. Check your connection and try again."));
     } finally {
       setSubmitting(false);
     }
@@ -182,7 +183,7 @@ export default function DashboardPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      setAcctError(err instanceof ApiError ? err.message : "Could not export your data.");
+      setAcctError(errorText(err, "Could not export your data."));
     }
   }
   async function deleteAccount() {
@@ -197,7 +198,7 @@ export default function DashboardPage() {
       // there offers the restore.
       router.push("/login?deleted=1");
     } catch (err) {
-      setAcctError(err instanceof ApiError ? err.message : "Could not delete your account.");
+      setAcctError(errorText(err, "Could not delete your account."));
       setDeleting(false);
     }
   }
@@ -220,9 +221,9 @@ export default function DashboardPage() {
   const sectionError = (
     <div className="load-error">
       <div className="empty-icon"><TriangleAlert size={40} strokeWidth={1.75} aria-hidden /></div>
-      <div className="ferr" role="alert">Couldn&apos;t load your data. Check your connection and try again.</div>
+      <div className="ferr" role="alert">Could not load your data. Check your connection and try again.</div>
       <div>
-        <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={refresh}>
+        <button className="btn-s btn-sm" onClick={refresh}>
           Retry
         </button>
       </div>
@@ -259,16 +260,16 @@ export default function DashboardPage() {
             <div className="ds-role">Student</div>
             <hr className="ds-divider" />
             <div className="ds-stat">
-              <span className="ds-stat-label">Verified Hours</span>
+              <span className="ds-stat-label">Verified hours</span>
               {/* Gated on dataError like every tab body below (240+). Ungated,
-                  a failed load showed "0 Verified Hours" — `hours` stays [] and
+                  a failed load showed "0 Verified hours" — `hours` stays [] and
                   is never reset — and a failed REFRESH after a good load showed
                   stale-but-plausible counts with no staleness cue, which is
                   worse because it looks right (audit 2026-09-02). */}
               <span className="ds-stat-val big">{dataError ? "—" : stats.verified}</span>
             </div>
             <div className="ds-stat">
-              <span className="ds-stat-label">Pending Hours</span>
+              <span className="ds-stat-label">Pending hours</span>
               <span className="ds-stat-val">{dataError ? "—" : stats.pending}</span>
             </div>
             <div className="ds-stat">
@@ -276,7 +277,7 @@ export default function DashboardPage() {
               <span className="ds-stat-val">{dataError ? "—" : stats.offsite}</span>
             </div>
             <div className="ds-stat">
-              <span className="ds-stat-label">Total Logged</span>
+              <span className="ds-stat-label">Total logged</span>
               <span className="ds-stat-val">{dataError ? "—" : stats.total}</span>
             </div>
             <hr className="ds-divider" />
@@ -310,9 +311,9 @@ export default function DashboardPage() {
           {tab === "history" && (
             <div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                <h1 className="dash-h">Hours History</h1>
+                <h1 className="dash-h">Hours history</h1>
                 {/* M16.2: a print layout the browser saves as a PDF (no PDF library). */}
-                <Link className="btn-s" href="/hours/report?print=1" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: ".8rem" }}>
+                <Link className="btn-s" href="/hours/report?print=1" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: "var(--fs-label)" }}>
                   <Download size={14} strokeWidth={1.75} aria-hidden /> Download PDF
                 </Link>
               </div>
@@ -340,7 +341,7 @@ export default function DashboardPage() {
 
           {tab === "log" && (
             <div>
-              <h1 className="dash-h">Log Hours</h1>
+              <h1 className="dash-h">Log hours</h1>
               {dataError ? sectionError : dataLoading ? skelPanel : (
                 <>
                 {oppOptions.length === 0 ? (
@@ -356,7 +357,7 @@ export default function DashboardPage() {
                           {oppOptions.map((o) => <option key={o.id} value={o.id}>{o.title}</option>)}
                         </select>
                         <input className="fsel" aria-label="Check-in code" style={{ width: 110, textTransform: "uppercase" }} value={ciCode} onChange={(e) => setCiCode(e.target.value)} placeholder="CODE" />
-                        <button className="btn-p" type="submit" style={{ padding: "9px 18px", fontSize: ".82rem" }} disabled={gated || submitting || !ciOpp || !ciCode}>Check in</button>
+                        <button className="btn-p btn-sm" type="submit" disabled={gated || submitting || !ciOpp || !ciCode}>Check in</button>
                       </div>
                     </form>
                   </div>
@@ -369,7 +370,7 @@ export default function DashboardPage() {
                           {oppOptions.map((o) => <option key={o.id} value={o.id}>{o.title}</option>)}
                         </select>
                         <input className="fsel" aria-label="Hours to report" style={{ width: 80 }} type="number" min={0.5} step={0.5} value={srHours} onChange={(e) => setSrHours(Number(e.target.value))} />
-                        <button className="btn-p" type="submit" style={{ padding: "9px 18px", fontSize: ".82rem" }} disabled={gated || submitting || !srOpp}>Submit</button>
+                        <button className="btn-p btn-sm" type="submit" disabled={gated || submitting || !srOpp}>Submit</button>
                       </div>
                     </form>
                   </div>
@@ -387,7 +388,7 @@ export default function DashboardPage() {
                         <input className="fsel" aria-label="Date" type="date" max={offsite.today} value={offsite.fields.date} onChange={(e) => offsite.fields.setDate(e.target.value)} />
                         <input className="fsel" aria-label="Hours" style={{ width: 80 }} type="number" min={0.5} max={24} step={0.5} value={offsite.fields.hours} onChange={(e) => offsite.fields.setHours(Number(e.target.value))} />
                         <input className="fsel" aria-label="Supervisor (optional)" style={{ flex: 1, minWidth: 140 }} maxLength={200} value={offsite.fields.supervisor} onChange={(e) => offsite.fields.setSupervisor(e.target.value)} placeholder="Supervisor (optional)" />
-                        <button className="btn-p" type="submit" style={{ padding: "9px 18px", fontSize: ".82rem" }} disabled={gated || offsite.submitting || !offsite.fields.activity.trim()}>Log</button>
+                        <button className="btn-p btn-sm" type="submit" disabled={gated || offsite.submitting || !offsite.fields.activity.trim()}>Log</button>
                       </div>
                       <input className="fsel" aria-label="Note for off-site hours (optional)" style={{ width: "100%" }} maxLength={500} value={offsite.fields.note} onChange={(e) => offsite.fields.setNote(e.target.value)} placeholder="Note (optional)" />
                     </form>
@@ -432,24 +433,24 @@ export default function DashboardPage() {
               <h1 className="dash-h">Impact</h1>
               {dataError ? sectionError : dataLoading ? skelPanel : (
               <div className="lb-band">
-                <div className="lb-stat"><div className="lb-stat-num">{stats.verified}</div><div className="lb-stat-label">Verified Hours</div></div>
+                <div className="lb-stat"><div className="lb-stat-num">{stats.verified}</div><div className="lb-stat-label">Verified hours</div></div>
                 <div className="lb-stat"><div className="lb-stat-num">{approvedApps.length}</div><div className="lb-stat-label">Opportunities</div></div>
-                <div className="lb-stat"><div className="lb-stat-num">{goalRows.completed.length}</div><div className="lb-stat-label">Goals Met</div></div>
+                <div className="lb-stat"><div className="lb-stat-num">{goalRows.completed.length}</div><div className="lb-stat-label">Goals met</div></div>
               </div>
               )}
               <h2 className="goal-section">Skill endorsements</h2>
-              <p style={{ fontSize: ".83rem", color: "var(--muted)", fontWeight: 300, marginBottom: 12 }}>Endorsements show on your public portfolio when it is public.</p>
+              <p style={{ fontSize: "var(--fs-label)", color: "var(--muted)", fontWeight: 400, marginBottom: 12 }}>Endorsements show on your public portfolio when it is public.</p>
               {endorsementsQ.error ? (
                 <div className="load-error">
-                  <div className="ferr" role="alert">Couldn&apos;t load your endorsements. Check your connection and try again.</div>
+                  <div className="ferr" role="alert">Could not load your endorsements. Check your connection and try again.</div>
                   <div>
-                    <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={endorsementsQ.retry}>
+                    <button className="btn-s btn-sm" onClick={endorsementsQ.retry}>
                       Retry
                     </button>
                   </div>
                 </div>
               ) : endorsementsQ.loading || !endorsementsQ.data ? (
-                <p style={{ fontSize: ".83rem", color: "var(--muted)" }} aria-busy="true">Loading endorsements...</p>
+                <p style={{ fontSize: "var(--fs-label)", color: "var(--muted)" }} aria-busy="true">Loading endorsements...</p>
               ) : endorsementsQ.data.length === 0 ? (
                 <div className="empty">No endorsements yet. An organization can endorse a skill after verifying your hours.</div>
               ) : (
@@ -482,17 +483,26 @@ export default function DashboardPage() {
               <h1 className="dash-h">Account</h1>
               <div className="form-box">
                 <div className="fr"><label htmlFor="dashboard-download-data">Download my data</label></div>
-                <p style={{ fontSize: ".83rem", color: "var(--muted)", fontWeight: 300, marginBottom: 12 }}>Download everything Citoya has on you as one JSON file: profile, applications, hours, messages, reviews, and notifications.</p>
-                <button id="dashboard-download-data" className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={downloadExport}><Download size={15} strokeWidth={1.75} aria-hidden /> Download my data (JSON)</button>
+                <p style={{ fontSize: "var(--fs-label)", color: "var(--muted)", fontWeight: 400, marginBottom: 12 }}>Download everything Citoya has on you as one JSON file: profile, applications, hours, messages, reviews, and notifications.</p>
+                <button id="dashboard-download-data" className="btn-s btn-sm" onClick={downloadExport}><Download size={15} strokeWidth={1.75} aria-hidden /> Download my data (JSON)</button>
+              </div>
+              <div className="form-box">
+                <div className="ds-stat">
+                  <span className="ds-stat-label">Two-factor login</span>
+                  <span className="ds-stat-val">{user.two_factor_enabled ? "On" : "Off"}</span>
+                </div>
+                <Link href="/security" className="btn-s btn-sm" style={{ display: "inline-block", textDecoration: "none" }}>
+                  {user.two_factor_enabled ? "Manage two-factor login" : "Set up two-factor login"}
+                </Link>
               </div>
               <div className="delete-zone">
-                <h4><TriangleAlert size={16} strokeWidth={1.75} aria-hidden /> Delete Account</h4>
+                <h4><TriangleAlert size={16} strokeWidth={1.75} aria-hidden /> Delete account</h4>
                 <p>
                   Your account is deactivated right away, and your signups are released so others can take the spots.
                   After 48 hours, your profile, guardian information, saved items, and notifications are permanently erased.
                   Your verified hours are kept for the organizations that recorded them, with your name removed.
                   <strong> Log in within 48 hours to restore your account</strong> (your signups are not restored).
-                  Until then, this email can&apos;t be used for a new account.
+                  Until then, this email cannot be used for a new account.
                 </p>
                 <div className="fr">
                   <label htmlFor="dashboard-delete-confirm">Type DELETE to confirm</label>
@@ -504,8 +514,7 @@ export default function DashboardPage() {
                 </div>
                 {acctError && <div className="ferr" role="alert" style={{ display: "block" }}>{acctError}</div>}
                 <button
-                  className="btn-s"
-                  style={{ color: "var(--red)", borderColor: "var(--red)", padding: "9px 18px", fontSize: ".83rem" }}
+                  className="btn-s btn-sm btn-danger"
                   disabled={delConfirm !== "DELETE" || !delPassword || deleting}
                   onClick={deleteAccount}
                 >{deleting ? "Deleting…" : "Delete my account"}</button>

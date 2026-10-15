@@ -92,14 +92,14 @@ export default function WelcomePage() {
             <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 18 }}>
               {steps.map((step, i) => (
                 <li key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                  <div style={{ flexShrink: 0, width: 28, height: 28, borderRadius: 6, background: "var(--green-pale)", border: "1px solid var(--green-mid)", color: "var(--green)", fontWeight: 700, fontSize: ".85rem", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ flexShrink: 0, width: 28, height: 28, borderRadius: 6, background: "var(--green-pale)", border: "1px solid var(--green-mid)", color: "var(--green)", fontWeight: 700, fontSize: "var(--fs-sm)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     {i + 1}
                   </div>
                   <div>
-                    <div style={{ fontWeight: 600, color: "var(--dark)", fontSize: ".95rem", marginBottom: 3 }}>{step.title}</div>
-                    <div style={{ fontSize: ".85rem", color: "var(--muted)", lineHeight: 1.6 }}>{step.body}</div>
+                    <div style={{ fontWeight: 600, color: "var(--dark)", fontSize: "var(--fs-body)", marginBottom: 3 }}>{step.title}</div>
+                    <div style={{ fontSize: "var(--fs-sm)", color: "var(--muted)", lineHeight: 1.6 }}>{step.body}</div>
                     {step.href && step.link && (
-                      <Link href={step.href} style={{ display: "inline-block", marginTop: 6, fontSize: ".82rem", color: "var(--green)", fontWeight: 600 }}>
+                      <Link href={step.href} style={{ display: "inline-block", marginTop: 6, fontSize: "var(--fs-label)", color: "var(--green)", fontWeight: 600 }}>
                         {step.link} →
                       </Link>
                     )}

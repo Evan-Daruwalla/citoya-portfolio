@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import logo from "@/public/logo.png";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -12,7 +13,7 @@ import { useEventStream } from "@/lib/use-event-stream";
 import { isV1Route } from "@/lib/v1-routes";
 
 export function SiteHeader() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading } = useAuth();
   const pathname = usePathname();
 
   // The one open SSE stream for the tab. Mounted here because the header is on
@@ -36,12 +37,12 @@ export function SiteHeader() {
   if (isV1Route(pathname)) return null;
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/80">
+    <header className="sticky top-0 z-40 w-full border-b border-border bg-background">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2.5">
-            <Image src="/logo.png" alt="" width={30} height={30} className="rounded-md" unoptimized />
-            <span className="font-display text-xl text-primary">
+            <Image src={logo} alt="" width={30} height={30} className="rounded-md" unoptimized />
+            <span className="font-display text-[length:var(--fs-h3)] text-primary">
               Citoya
             </span>
           </Link>
@@ -76,8 +77,14 @@ export function SiteHeader() {
               >
                 Inbox
               </Link>
-              <Button variant="outline" size="sm" onClick={logout}>
-                Log out
+              <Link
+                href="/security"
+                className="hidden rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground sm:inline"
+              >
+                Security
+              </Link>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/logout">Log out</Link>
               </Button>
             </>
           ) : (

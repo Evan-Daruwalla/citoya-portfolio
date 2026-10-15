@@ -1,5 +1,6 @@
 "use client";
 
+import { errorText } from "@/lib/errors";
 import { useState } from "react";
 
 import { ApiError, api } from "@/lib/api";
@@ -64,7 +65,7 @@ export function SignupSection({ opp, onChange }: { opp: Opportunity; onChange: (
       void mutateMyApps();
       onChange();
     } catch (err) {
-      setSubmitError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setSubmitError(errorText(err, "We could not send your application. Check your connection and try again."));
     } finally {
       setSubmitting(false);
     }
@@ -82,7 +83,7 @@ export function SignupSection({ opp, onChange }: { opp: Opportunity; onChange: (
       void mutateMyApps();
       onChange();
     } catch (err) {
-      setSubmitError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setSubmitError(errorText(err, "We could not withdraw your application. Check your connection and try again."));
     } finally {
       setSubmitting(false);
     }
@@ -97,7 +98,7 @@ export function SignupSection({ opp, onChange }: { opp: Opportunity; onChange: (
       await api.excludeDate(opp.id, date, isSkipped ? "include" : "exclude", token);
       void mutateMyApps();
     } catch (err) {
-      setSubmitError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setSubmitError(errorText(err, "We could not change that date. Check your connection and try again."));
     } finally {
       setSkipBusy(null);
     }
@@ -138,18 +139,18 @@ export function SignupSection({ opp, onChange }: { opp: Opportunity; onChange: (
               type="button"
               onClick={() => setConfirmingWithdraw(true)}
               disabled={submitting}
-              style={{ padding: "8px 16px", fontSize: ".8rem" }}
+              style={{ padding: "8px 16px", fontSize: "var(--fs-label)" }}
             >
               Withdraw
             </button>
           ))}
         {canSkip && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-start" }}>
-            <p className="progress-label" style={{ marginTop: 0 }}>Skip a date you can&apos;t make:</p>
+            <p className="progress-label" style={{ marginTop: 0 }}>Skip a date you cannot make:</p>
             {upcoming.map((d) => {
               const isSkipped = myApp.excluded_dates.includes(d);
               return (
-                <div key={d} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: ".84rem" }}>
+                <div key={d} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "var(--fs-label)" }}>
                   <span>{fmtDateKey(d, DAY)}</span>
                   {isSkipped && <span>Skipped</span>}
                   <button
@@ -157,7 +158,7 @@ export function SignupSection({ opp, onChange }: { opp: Opportunity; onChange: (
                     type="button"
                     onClick={() => toggleSkip(d, isSkipped)}
                     disabled={skipBusy !== null}
-                    style={{ padding: "8px 16px", fontSize: ".8rem" }}
+                    style={{ padding: "8px 16px", fontSize: "var(--fs-label)" }}
                   >
                     {isSkipped ? "Undo skip" : "Skip"}
                   </button>
@@ -197,11 +198,11 @@ export function SignupSection({ opp, onChange }: { opp: Opportunity; onChange: (
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {/* `.fr label` is uppercase-tracked and block — wrong for a radio row, so
             these keep inline layout and take the body font size directly. */}
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: ".84rem" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "var(--fs-label)" }}>
           <input type="radio" name="signup" checked={mode === "all_dates"} onChange={() => setMode("all_dates")} />
           Subscribe to all dates
         </label>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: ".84rem" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "var(--fs-label)" }}>
           <input
             type="radio"
             name="signup"
@@ -219,13 +220,13 @@ export function SignupSection({ opp, onChange }: { opp: Opportunity; onChange: (
           <p className="ferr" role="alert" style={{ marginBottom: 0 }}>
             {loadError instanceof ApiError && loadError.status >= 400 && loadError.status < 500
               ? loadError.message
-              : "Couldn't load available dates. You can still subscribe to all dates."}
+              : "Could not load available dates. You can still subscribe to all dates."}
           </p>
           <button
             className="btn-s"
             type="button"
             onClick={retry}
-            style={{ padding: "8px 16px", fontSize: ".8rem" }}
+            style={{ padding: "8px 16px", fontSize: "var(--fs-label)" }}
           >
             Retry
           </button>

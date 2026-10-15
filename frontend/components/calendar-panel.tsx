@@ -10,7 +10,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
+import { errorText } from "@/lib/errors";
 import { TOKEN_KEY } from "@/lib/auth-context";
 import { eventInstant, fmtDateKey, localDateKey, sameClockAsViewer, viewerTimeZone } from "@/lib/event-time";
 import type { CalendarItem } from "@/lib/types";
@@ -94,7 +95,7 @@ export function CalendarPanel() {
       setMessage(`Added to ${fmtDateKey(date)}.`);
       void calQ.mutate();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't add that event.");
+      setError(errorText(err, "Could not add that event."));
     } finally {
       setBusy(false);
     }
@@ -109,7 +110,7 @@ export function CalendarPanel() {
       await api.deleteCalendarEvent(item.id, token);
       void calQ.mutate();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't delete that event.");
+      setError(errorText(err, "Could not delete that event."));
     }
   }
 
@@ -169,8 +170,8 @@ export function CalendarPanel() {
       </div>
       {calQ.error && (
         <p className="ferr" role="alert" style={{ marginTop: 12 }}>
-          Couldn&apos;t load this month.{" "}
-          <button type="button" className="btn-s" style={{ padding: "4px 12px", fontSize: ".78rem" }} onClick={calQ.retry}>Retry</button>
+          Could not load this month.{" "}
+          <button type="button" className="btn-s" style={{ padding: "4px 12px", fontSize: "var(--fs-micro)" }} onClick={calQ.retry}>Retry</button>
         </p>
       )}
       {calQ.data !== undefined && items.length === 0 && (
@@ -180,7 +181,7 @@ export function CalendarPanel() {
       <div className="form-box" style={{ marginTop: 16 }}>
         <form onSubmit={add}>
           <div className="fr"><label htmlFor="cal-event-title">Add your own event</label></div>
-          <p className="progress-label" style={{ marginTop: 0, marginBottom: 12 }}>For volunteering you arranged yourself. Only you see it, and it does not log hours: after it happens, log the time under Log Hours.</p>
+          <p className="progress-label" style={{ marginTop: 0, marginBottom: 12 }}>For volunteering you arranged yourself. Only you see it, and it does not log hours: after it happens, log the time under Log hours.</p>
           <div className="fr"><input id="cal-event-title" className="fsel" style={{ width: "100%" }} maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What and where" /></div>
           <div className="checkin-bar">
             <input className="fsel" aria-label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
@@ -189,7 +190,7 @@ export function CalendarPanel() {
             <input className="fsel" aria-label="Location (optional)" style={{ flex: 1, minWidth: 140 }} maxLength={200} value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Location (optional)" />
           </div>
           <div className="fr"><input className="fsel" aria-label="Note for the event (optional)" style={{ width: "100%" }} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" /></div>
-          <button className="btn-p" type="submit" style={{ padding: "9px 18px", fontSize: ".82rem" }} disabled={busy || !title.trim()}>Add event</button>
+          <button className="btn-p btn-sm" type="submit" disabled={busy || !title.trim()}>Add event</button>
         </form>
       </div>
       {message && <p className="progress-label">{message}</p>}

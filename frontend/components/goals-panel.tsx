@@ -9,7 +9,8 @@ import { ArrowDown, ArrowUp, Target, Trash2, Trophy } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import type { KeyedMutator } from "swr";
 
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
+import { errorText } from "@/lib/errors";
 import { TOKEN_KEY } from "@/lib/auth-context";
 import { fmtDateKey, localDateKey } from "@/lib/event-time";
 import type { GoalProgress } from "@/lib/goals";
@@ -85,7 +86,7 @@ export function GoalsPanel({
       setTitle("");
       await mutate();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't add that goal.");
+      setError(errorText(err, "Could not add that goal."));
     } finally {
       setBusy(false);
     }
@@ -104,7 +105,7 @@ export function GoalsPanel({
       await api.deleteGoal(goal.id, token);
     } catch (err) {
       void mutate(prev, { revalidate: false });
-      setError(err instanceof ApiError ? err.message : "Couldn't delete that goal.");
+      setError(errorText(err, "Could not delete that goal."));
     }
   }
 
@@ -125,7 +126,7 @@ export function GoalsPanel({
       void mutate({ ...data, goals }, { revalidate: false });
     } catch (err) {
       void mutate(prev, { revalidate: false });
-      setError(err instanceof ApiError ? err.message : "Couldn't move that goal.");
+      setError(errorText(err, "Could not move that goal."));
     }
   }
 
@@ -202,7 +203,7 @@ export function GoalsPanel({
               </div>
             </>
           )}
-          <button className="btn-p" type="submit" style={{ padding: "9px 18px", fontSize: ".82rem" }} disabled={busy || !choice || (own && !title.trim())}>Add goal</button>
+          <button className="btn-p btn-sm" type="submit" disabled={busy || !choice || (own && !title.trim())}>Add goal</button>
         </form>
       </div>
       {error && <p className="ferr" role="alert">{error}</p>}

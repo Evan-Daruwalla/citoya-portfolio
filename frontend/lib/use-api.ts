@@ -68,7 +68,7 @@ export function useAuthedQuery<T>(
       // value, so touching it during render would differ between server and
       // client. `api` clears it itself on a 401.
       const token = localStorage.getItem(TOKEN_KEY);
-      if (!token) throw new ApiError(401, "You're signed out.");
+      if (!token) throw new ApiError(401, "You are signed out.");
       return fetcher(token);
     },
     { onErrorRetry, ...config },

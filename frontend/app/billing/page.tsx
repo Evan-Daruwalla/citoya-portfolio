@@ -5,7 +5,8 @@ import { Suspense, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
+import { errorText } from "@/lib/errors";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { isStripeCheckoutUrl } from "@/lib/checkout";
 import { BILLING_LIVE } from "@/lib/flags";
@@ -31,7 +32,7 @@ function BillingInner() {
       }
       window.location.href = url; // redirect to Stripe-hosted Checkout
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not start checkout.");
+      setError(errorText(err, "Could not start checkout."));
       setBusy(false);
     }
   }
@@ -82,7 +83,7 @@ function BillingInner() {
             </Button>
           ) : (
             <p className="text-muted-foreground">
-              Pro upgrades aren’t open yet — every organization is on the free Community plan
+              Pro upgrades are not open yet — every organization is on the free Community plan
               while Citoya launches. Free covers up to 3 active listings.
             </p>
           )}

@@ -1,8 +1,9 @@
 "use client";
 
+import { errorText } from "@/lib/errors";
 import { useState, type FormEvent } from "react";
 
-import { WifiOff } from "lucide-react";
+import { Star, WifiOff } from "lucide-react";
 
 import { ApiError, api } from "@/lib/api";
 import { ReportConcern } from "@/components/report-concern";
@@ -53,7 +54,7 @@ export function ReviewsSection({ orgId, opportunityId }: { orgId: string; opport
       void mutate();
       setEditingId(null);
     } catch (err) {
-      setDeleteError(err instanceof ApiError ? err.message : "Could not save the review.");
+      setDeleteError(errorText(err, "Could not save the review."));
     } finally {
       setSavingEdit(false);
     }
@@ -74,7 +75,7 @@ export function ReviewsSection({ orgId, opportunityId }: { orgId: string; opport
       await api.deleteReview(orgId, reviewId, token);
       void mutate();
     } catch (err) {
-      setDeleteError(err instanceof ApiError ? err.message : "Could not delete the review.");
+      setDeleteError(errorText(err, "Could not delete the review."));
     } finally {
       setDeletingId(null);
     }
@@ -91,7 +92,7 @@ export function ReviewsSection({ orgId, opportunityId }: { orgId: string; opport
       setText("");
       void mutate();
     } catch (err) {
-      setSubmitError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setSubmitError(errorText(err, "We could not post your review. Check your connection and try again."));
     } finally {
       setSubmitting(false);
     }
@@ -105,8 +106,8 @@ export function ReviewsSection({ orgId, opportunityId }: { orgId: string; opport
         <h2 className="mtitle" style={{ marginBottom: 0 }}>
           Reviews
           {data && data.average_rating != null && (
-            <span style={{ marginLeft: 8, fontSize: ".82rem", fontWeight: 400, color: "var(--muted)" }}>
-              ★ {data.average_rating} ({data.count})
+            <span style={{ marginLeft: 8, fontSize: "var(--fs-label)", fontWeight: 400, color: "var(--muted)" }}>
+              <Star size={16} strokeWidth={1.75} aria-hidden fill="currentColor" /> {data.average_rating} ({data.count})
             </span>
           )}
         </h2>
@@ -122,19 +123,23 @@ export function ReviewsSection({ orgId, opportunityId }: { orgId: string; opport
             <div className="empty-icon"><WifiOff size={28} strokeWidth={1.75} aria-hidden /></div>
             {error instanceof ApiError && error.status >= 400 && error.status < 500
               ? error.message
-              : "Couldn't load reviews. Check your connection and try again."}
+              : "Could not load reviews. Check your connection and try again."}
             <div style={{ marginTop: 12 }}>
               <button className="btn-s" onClick={retry}>Retry</button>
             </div>
           </div>
         )}
 
-        {data && data.reviews.length === 0 && <p className="progress-label" style={{ marginTop: 0 }}>No reviews yet.</p>}
+        {data && data.reviews.length === 0 && <p className="progress-label" style={{ marginTop: 0 }}>No reviews yet. Students review an organization after they volunteer with it.</p>}
         {data?.reviews.map((r) => (
           <div key={r.id} style={{ borderBottom: "1px solid var(--border)", paddingBottom: 10 }}>
-            <p style={{ fontSize: ".84rem", fontWeight: 600, color: "var(--text)", margin: 0 }}>
-              {"★".repeat(r.rating)}
-              {"☆".repeat(5 - r.rating)} · {r.author_name}
+            <p style={{ fontSize: "var(--fs-label)", fontWeight: 600, color: "var(--text)", margin: 0 }}>
+              <span role="img" aria-label={`${r.rating} out of 5 stars`}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star key={n} size={16} strokeWidth={1.75} aria-hidden fill={n <= r.rating ? "currentColor" : "none"} />
+                ))}
+              </span>{" "}
+              · {r.author_name}
             </p>
             {editingId === r.id ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 6 }}>
@@ -163,13 +168,13 @@ export function ReviewsSection({ orgId, opportunityId }: { orgId: string; opport
                 <div style={{ display: "flex", gap: 10 }}>
                   <button
                     className="btn-p"
-                    style={{ padding: "4px 10px", fontSize: ".72rem" }}
+                    style={{ padding: "4px 10px", fontSize: "var(--fs-micro)" }}
                     disabled={savingEdit}
                     onClick={() => onSaveEdit(r.id)}
                   >{savingEdit ? "Saving…" : "Save"}</button>
                   <button
                     className="btn-s"
-                    style={{ padding: "4px 10px", fontSize: ".72rem" }}
+                    style={{ padding: "4px 10px", fontSize: "var(--fs-micro)" }}
                     disabled={savingEdit}
                     onClick={() => setEditingId(null)}
                   >Cancel</button>
@@ -178,11 +183,11 @@ export function ReviewsSection({ orgId, opportunityId }: { orgId: string; opport
             ) : (
               r.text && <p className="progress-label" style={{ marginTop: 4 }}>{r.text}</p>
             )}
-            <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 6, fontSize: ".72rem" }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 6, fontSize: "var(--fs-micro)" }}>
               {r.mine && editingId !== r.id && (
                 <button
                   className="btn-s"
-                  style={{ padding: "4px 10px", fontSize: ".72rem" }}
+                  style={{ padding: "4px 10px", fontSize: "var(--fs-micro)" }}
                   onClick={() => {
                     setEditRating(r.rating);
                     setEditText(r.text);
@@ -193,7 +198,7 @@ export function ReviewsSection({ orgId, opportunityId }: { orgId: string; opport
               {(r.mine || user?.is_admin) && (
                 <button
                   className="btn-s"
-                  style={{ padding: "4px 10px", fontSize: ".72rem" }}
+                  style={{ padding: "4px 10px", fontSize: "var(--fs-micro)" }}
                   disabled={deletingId === r.id}
                   onClick={() => onDelete(r.id, r.mine)}
                 >{r.mine ? "Delete my review" : "Remove (admin)"}</button>
@@ -240,10 +245,10 @@ export function ReviewsSection({ orgId, opportunityId }: { orgId: string; opport
             />
             {submitError && <p className="ferr" role="alert" style={{ marginBottom: 0 }}>{submitError}</p>}
             <button
-              className="btn-p"
+              className="btn-p btn-sm"
               type="submit"
               disabled={submitting}
-              style={{ alignSelf: "flex-start", padding: "9px 18px", fontSize: ".83rem" }}
+              style={{ alignSelf: "flex-start" }}
             >
               {submitting ? "Posting…" : "Post review"}
             </button>

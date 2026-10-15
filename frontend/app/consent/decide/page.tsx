@@ -1,10 +1,11 @@
 "use client";
 
+import { errorText } from "@/lib/errors";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
 import type { ConsentContext } from "@/lib/types";
 
 export default function ConsentDecisionPage() {
@@ -36,9 +37,10 @@ export default function ConsentDecisionPage() {
       .then(setCtx)
       .catch((err) =>
         setError(
-          err instanceof ApiError
-            ? err.message
-            : "This link is invalid or missing its access code. Use the link from your email."
+          errorText(
+            err,
+            "This link is invalid or missing its access code. Use the link from your email."
+          )
         )
       );
   }, []);
@@ -50,7 +52,7 @@ export default function ConsentDecisionPage() {
       const res = await api.decideConsent(tokenRef.current, decision);
       setDone(res.message);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setError(errorText(err, "We could not record your decision. Check your connection and try again."));
     } finally {
       setBusy(false);
     }
@@ -73,7 +75,7 @@ export default function ConsentDecisionPage() {
                   {ctx.student_first_name} {ctx.student_last_initial}
                   {ctx.student_last_initial ? "." : ""}
                 </span>{" "}
-                listed you as their parent or guardian. They can&apos;t sign up for any volunteer
+                listed you as their parent or guardian. They cannot sign up for any volunteer
                 opportunity until you approve. You can revoke your approval anytime.
               </p>
               {error && <p className="text-sm text-destructive" role="alert">{error}</p>}

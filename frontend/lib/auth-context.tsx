@@ -7,11 +7,15 @@
  * `register` auto-logs-in. Consume via `useAuth()` inside `<AuthProvider>` (mounted in
  * the root layout). `loading` is true only during the initial hydrate — gate redirects
  * on it so a page doesn't bounce a logged-in user to /login before hydration finishes.
+ * Two-factor (2FA build, 2026-10-13): `login` returns `{ mfaToken }` when a code is still
+ * needed (finish with `loginMfa`); `adoptToken` stores the fresh token enable/disable return;
+ * an account that must have two-factor but does not is sent to /security.
  */
+import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useSWRConfig } from "swr";
 
-import { api, ApiError, SESSION_EXPIRED_EVENT, TOKEN_KEY } from "@/lib/api";
+import { api, ApiError, MFA_ENROLLMENT_REQUIRED_EVENT, SESSION_EXPIRED_EVENT, TOKEN_KEY } from "@/lib/api";
 import type { User } from "@/lib/types";
 
 type RegisterInput = {
@@ -29,7 +33,17 @@ type RegisterInput = {
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string, opts?: { restore?: boolean }) => Promise<void>;
+  /** `{ user }` = signed in. `{ mfaToken }` = the password was right and a code is still needed. */
+  login: (
+    email: string,
+    password: string,
+    opts?: { restore?: boolean },
+  ) => Promise<{ mfaToken: string } | { user: User }>;
+  loginMfa: (mfaToken: string, code: string, opts?: { restore?: boolean }) => Promise<User>;
+  /** Store the new token enable/disable return (they bump token_version) and reload the user. */
+  adoptToken: (accessToken: string) => Promise<User>;
+  /** The stored token, for pages that call an authenticated endpoint without touching storage. */
+  getToken: () => string | null;
   register: (input: RegisterInput) => Promise<void>;
   refresh: () => Promise<void>;
   logout: () => void;
@@ -41,12 +55,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const { mutate } = useSWRConfig();
+  const router = useRouter();
+  const pathname = usePathname();
 
   /**
    * Drop every cached response. Called whenever the signed-in identity changes.
    *
-   * SWR's cache is process-global and survives until a hard reload — there is no
-   * `<SWRConfig>` in this app, and nothing else clears it. Without this, signing
+   * SWR's cache is process-global and survives until a hard reload — the app's
+   * `<SWRConfig>` (components/swr-provider.tsx) sets defaults only, no per-user cache, and
+   * nothing else clears it. Without this, signing
    * out and signing in as someone else in the SAME TAB left every key populated,
    * and SWR serves a cached entry synchronously (`isLoading` is false when data
    * exists). The next account's first paint therefore rendered the PREVIOUS
@@ -130,10 +147,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (err instanceof ApiError && err.status === 401) setUser(null);
         });
     }
+    // An admin/org API call answered 403 MFA_ENROLLMENT_REQUIRED: go set two-factor up.
+    // Reads the live path (the closure's would be stale), so it never loops on /security.
+    function onEnrollmentRequired() {
+      if (window.location.pathname !== "/security") router.replace("/security");
+    }
     window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    window.addEventListener(MFA_ENROLLMENT_REQUIRED_EVENT, onEnrollmentRequired);
     window.addEventListener("storage", onStorage);
     return () => {
       window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+      window.removeEventListener(MFA_ENROLLMENT_REQUIRED_EVENT, onEnrollmentRequired);
       window.removeEventListener("storage", onStorage);
     };
     // clearCache closes over SWR's stable `mutate`; re-subscribing every render is
@@ -141,8 +165,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Enforcement (2FA build, 2026-10-13): an account that must have two-factor but does not
+  // is held on /security. Runs on every user or path change, so it covers hydrate, login,
+  // refresh and adoptToken alike, and a nav click away from /security bounces back. The API
+  // refuses such an account's other calls anyway (403 MFA_ENROLLMENT_REQUIRED); this is the UX.
+  // /logout is exempt too: since logout became a confirm page (2026-10-13) such an account
+  // could otherwise never sign out (POST /auth/logout is on the server's enrollment allowlist).
+  useEffect(() => {
+    if (user && user.two_factor_required && !user.two_factor_enabled && pathname !== "/security" && pathname !== "/logout") {
+      router.replace("/security");
+    }
+  }, [user, pathname, router]);
+
   async function login(email: string, password: string, opts?: { restore?: boolean }) {
-    const { access_token } = await api.login({ email, password, restore: opts?.restore });
+    const res = await api.login({ email, password, restore: opts?.restore });
+    if ("mfa_required" in res) return { mfaToken: res.mfa_token };
+    const { access_token } = res;
     localStorage.setItem(TOKEN_KEY, access_token);
     // Audit DY Low 38, 2026-10-07: clear AFTER the new token is stored, before the new
     // identity is hydrated. Clearing first, while the old token was still in storage,
@@ -151,7 +189,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // already in flight, so a late old-token response cannot land after this — see
     // clearCache.
     clearCache();
-    setUser(await api.me(access_token));
+    const me = await api.me(access_token);
+    setUser(me);
+    return { user: me };
+  }
+
+  async function loginMfa(mfaToken: string, code: string, opts?: { restore?: boolean }) {
+    const { access_token } = await api.loginMfa({ mfa_token: mfaToken, code, restore: opts?.restore });
+    return adoptToken(access_token);
+  }
+
+  // The code step and enable/disable land here: same three steps and order as `login` above
+  // (store, clear the cache, hydrate), for the same Low 38 reason.
+  async function adoptToken(access_token: string) {
+    localStorage.setItem(TOKEN_KEY, access_token);
+    clearCache();
+    const me = await api.me(access_token);
+    setUser(me);
+    return me;
+  }
+
+  function getToken() {
+    return localStorage.getItem(TOKEN_KEY);
   }
 
   async function register(input: RegisterInput) {
@@ -176,7 +235,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, refresh, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, loginMfa, adoptToken, getToken, register, refresh, logout }}>
       {children}
     </AuthContext.Provider>
   );

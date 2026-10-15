@@ -7,7 +7,7 @@ Last updated 2026-10-08 (audit DY Low 50: the header and counts below had stood 
   2026-07-12 — full stack boots, migrations applied on real Postgres), **M12 v1 visual parity**
   (2026-07-12), and two off-roadmap Evan-directed 2026-07-13 blocks: **v1 EXACT-COPY** (all 13
   screens rebuilt in the scoped `.v1` architecture — see architecture.md/conventions.md) and a
-  **public-portfolio slice**. **1151 collected (1146 passed + 5 skipped on SQLite; 1151 passed on Postgres), migrations 0001-0043 (2026-10-10, record EU; 1147 at record ET; 1092 at record ER; 1042 at record EQ; 1023 at record EP; 1006 at record EL; before that 1004 collected, 999 + 5 on SQLite, 1004 on Postgres, record EH; the full count history is in testing.md;
+  **public-portfolio slice**. **1187 collected (1182 passed + 5 skipped on SQLite, 2026-10-11, record EZ; 1186 at record EW, 1181 + 5; Postgres 1182 passed before the 4 DB-free lock tests), migrations 0001-0043 (2026-10-10, record EW; 1151 at record EU; 1147 at record ET; 1092 at record ER; 1042 at record EQ; 1023 at record EP; 1006 at record EL; before that 1004 collected, 999 + 5 on SQLite, 1004 on Postgres, record EH; the full count history is in testing.md;
   supersedes 704 of 2026-09-27 22:12-22:20 CDT (CX), 697 of ~20:43 (CQ), 691 of ~19:16 (CP), 684 of ~18:20 (CO), 682 of ~17:44 (CN), 673 of ~17:32 (CM), 665 of ~17:17 (CL), 646 of ~16:54 (CJ), 633 of 2026-09-26 ~23:23 (CG), 589 of ~01:14 (BV), 588 of ~00:40 (BU), 582 of 2026-09-25 ~22:06 (BS), 578 of 2026-09-24 ~23:49 (BR), 542 of ~22:43 (BQ), 533 of ~21:09 (BJ), 516 of 2026-09-23 ~22:20 CDT, 513 of 21:08, 512 of ~20:58, 509 of ~20:45, 508 of ~16:20, 507 of ~15:48 the same day and 454/0001–0029 of 2026-09-20, which superseded the 327/0001–0024 figure of 2026-08-19, which superseded 189/0001–0021). M11 launch = BLOCKED-ON-EVAN (host, domain/DNS, prod
   secrets, Resend key, Turnstile key, SUPPORT_EMAIL, legal).**
 - **M13 / M14 (added 2026-09-02).** This section stopped at M9/M10/M12 while INDEX.md
@@ -140,7 +140,7 @@ Last updated 2026-10-08 (audit DY Low 50: the header and counts below had stood 
   Checkout Session, inline price_data, → `{url}`; 503 if unconfigured, 409 if already pro) +
   `POST /billing/webhook` (signature-verified via `stripe.Webhook.construct_event` over the RAW body;
   `checkout.session.completed`→pro + store `stripe_customer_id` (migration 0019),
-  `customer.subscription.deleted`→free). `stripe==11.6.0` (was 11.4.1 until 2026-10-09); test-mode keys in `.env`;
+  `customer.subscription.deleted`→free). `stripe==16.0.0` since 2026-10-10, record EW (11.6.0 from 2026-10-09; 11.4.1 before; see `dependencies.md` for the dict-access break); test-mode keys in `.env`;
   `STRIPE_WEBHOOK_SECRET` from `stripe listen`. Tests mock stripe + monkeypatch `settings`. No
   self-serve plan flip — only the webhook does it. Tests flip plan via the `conftest.py` `db_session`
   fixture.

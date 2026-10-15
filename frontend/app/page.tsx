@@ -8,6 +8,8 @@ import {
   CalendarPlus,
   FlaskConical,
   MapPin,
+  Pause,
+  Play,
   Search,
   Sprout,
   Target,
@@ -15,6 +17,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 import { V1Shell } from "@/components/v1/v1-shell";
 import { api } from "@/lib/api";
 import { usePublicQuery } from "@/lib/use-api";
@@ -29,71 +32,70 @@ export default function Home() {
   // backend). "—" is the project's established failed-stat glyph.
   const { data, error } = usePublicQuery("stats", () => api.stats());
   const oppCount = data?.opportunities ?? null;
+  const [marqueePaused, setMarqueePaused] = useState(false);
 
   return (
     <V1Shell>
       {/* HERO */}
       <div className="hero">
         <div>
-          <div className="hero-tag">Free forever for students. No catch.</div>
+          <div className="hero-tag">Students never pay</div>
           <h1>
-            Serve your community. <em>Build</em> your future.
+            Serve your community. <em>Build</em> your future
           </h1>
           <p>
-            Citoya matches students with volunteer work that fits their skills and interests,
-            then verifies the hours, tracks award progress, and builds a portfolio for their
-            applications.
+            Find volunteer work near you. Organizations verify your hours, so you can show what you did.
           </p>
           <div className="hero-btns">
             <Link className="btn-p" href="/discover">
-              Browse Opportunities
+              Browse opportunities
             </Link>
             <Link className="btn-s" href="/for-organizations">
-              For Organizations
+              For organizations
             </Link>
           </div>
           <div className="hero-stats">
             <div>
               <div className="hs-num">{error ? "—" : (oppCount ?? "…")}</div>
-              <div className="hs-label">Active Listings</div>
+              <div className="hs-label">Active listings</div>
             </div>
             <div>
               <div className="hs-num">Free</div>
-              <div className="hs-label">For Students</div>
+              <div className="hs-label">For students</div>
             </div>
             <div>
               <div className="hs-num">Verified</div>
-              <div className="hs-label">Hour Tracking</div>
+              <div className="hs-label">Hour tracking</div>
             </div>
           </div>
         </div>
         <div className="hero-visual">
           <div className="mini-card">
-            <div className="mc-icon" style={{ background: "#e8f5ef", color: "var(--green)" }}>
+            <div className="mc-icon" style={{ background: "var(--c-green-tint)", color: "var(--green)" }}>
               <Sprout size={20} strokeWidth={1.75} aria-hidden />
             </div>
             <div>
-              <div className="mc-title">Community Garden Helper</div>
+              <div className="mc-title">Community garden helper</div>
               <div className="mc-sub">Green Roots Org · 1.2 mi</div>
             </div>
             <span className="mc-badge">4 hrs</span>
           </div>
           <div className="mini-card">
-            <div className="mc-icon" style={{ background: "#eef4ff", color: "var(--blue)" }}>
+            <div className="mc-icon" style={{ background: "var(--c-blue-tint)", color: "var(--blue)" }}>
               <BookOpen size={20} strokeWidth={1.75} aria-hidden />
             </div>
             <div>
-              <div className="mc-title">Youth Literacy Tutor</div>
+              <div className="mc-title">Youth literacy tutor</div>
               <div className="mc-sub">City Library · Remote</div>
             </div>
             <span className="mc-badge">Flexible</span>
           </div>
           <div className="mini-card">
-            <div className="mc-icon" style={{ background: "#fdf5e0", color: "var(--amber)" }}>
+            <div className="mc-icon" style={{ background: "var(--c-amber-wash)", color: "var(--amber)" }}>
               <FlaskConical size={20} strokeWidth={1.75} aria-hidden />
             </div>
             <div>
-              <div className="mc-title">STEM Workshop Helper</div>
+              <div className="mc-title">STEM workshop helper</div>
               <div className="mc-sub">Future Engineers · 0.8 mi</div>
             </div>
             <span className="mc-badge">4 hrs</span>
@@ -102,7 +104,7 @@ export default function Home() {
       </div>
 
       {/* MARQUEE */}
-      <div className="marquee-band">
+      <div className={`marquee-band${marqueePaused ? " is-paused" : ""}`}>
         <div className="marquee-track">
           {/* Repeats exist only to fill wide screens and loop seamlessly: screen readers get the list once. */}
           {[0, 1].map((copy) => (
@@ -120,6 +122,15 @@ export default function Home() {
             </div>
           ))}
         </div>
+        <button
+          type="button"
+          className="marquee-toggle"
+          aria-pressed={marqueePaused}
+          aria-label={marqueePaused ? "Play the moving list" : "Pause the moving list"}
+          onClick={() => setMarqueePaused((v) => !v)}
+        >
+          {marqueePaused ? <Play size={16} strokeWidth={1.75} aria-hidden /> : <Pause size={16} strokeWidth={1.75} aria-hidden />}
+        </button>
       </div>
 
       {/* STATS BAR */}
@@ -149,22 +160,22 @@ export default function Home() {
         <div className="hiw-grid" style={{ marginTop: 24 }}>
           <div className="hiw-step">
             <div className="hiw-icon"><Search size={26} strokeWidth={1.75} aria-hidden /></div>
-            <h4>Discover &amp; Filter</h4>
+            <h4>Discover and filter</h4>
             <p>Search by skill, ZIP code, cause, date, or time commitment. Read reviews from other volunteers before you sign up.</p>
           </div>
           <div className="hiw-step">
             <div className="hiw-icon"><CalendarDays size={26} strokeWidth={1.75} aria-hidden /></div>
-            <h4>Sign Up &amp; Sync</h4>
+            <h4>Sign up and sync</h4>
             <p>One-click signup with conflict warnings, waitlists for full events, and calendar sync to your phone.</p>
           </div>
           <div className="hiw-step">
             <div className="hiw-icon"><BadgeCheck size={26} strokeWidth={1.75} aria-hidden /></div>
-            <h4>Verified Hours</h4>
+            <h4>Verified hours</h4>
             <p>Hours log automatically after events, and supervisors verify them. No more paper signature sheets.</p>
           </div>
           <div className="hiw-step">
             <div className="hiw-icon"><Trophy size={26} strokeWidth={1.75} aria-hidden /></div>
-            <h4>Awards &amp; Portfolio</h4>
+            <h4>Awards and portfolio</h4>
             <p>Track verified-hour milestones and export a transcript for your applications.</p>
           </div>
         </div>
@@ -178,9 +189,9 @@ export default function Home() {
           <div className="bento-card feature b-2x2">
             <div className="bi"><BadgeCheck size={26} strokeWidth={1.75} aria-hidden /></div>
             <h3>Verified hours, logged automatically</h3>
-            <p>Hours log themselves after each event, then supervisors verify them in a tap. No paper signature sheets, no chasing anyone down. Your record stays tamper-proof and ready to export.</p>
+            <p>Hours log themselves after each event, then supervisors verify them in a tap. No paper signature sheets, no chasing anyone down. Every verified hour was confirmed by the organization that ran the event. Export your record any time.</p>
             <span className="mc-badge" style={{ alignSelf: "flex-start", marginTop: "auto" }}>
-              Tamper-proof records
+              Confirmed by organizations
             </span>
           </div>
           <div className="bento-card">
@@ -195,7 +206,7 @@ export default function Home() {
           </div>
           <div className="bento-card gold b-2x1">
             <div className="bi"><Trophy size={26} strokeWidth={1.75} aria-hidden /></div>
-            <h4>Awards &amp; a portfolio worth showing</h4>
+            <h4>Awards and a portfolio worth showing</h4>
             <p>Track verified-hour milestones, share a public portfolio if you choose, and export a transcript for college and job applications.</p>
           </div>
           <div className="bento-card">
@@ -211,7 +222,7 @@ export default function Home() {
           <div className="bento-card b-2x1">
             <div className="bi"><Users size={26} strokeWidth={1.75} aria-hidden /></div>
             <h4>Reviews from volunteers</h4>
-            <p>Students rate and review organizations publicly, so you can see what you&apos;re signing up for before you apply.</p>
+            <p>Students rate and review organizations publicly, so you can see what you are signing up for before you apply.</p>
           </div>
         </div>
       </div>
@@ -219,19 +230,19 @@ export default function Home() {
       {/* PLEDGE */}
       <div className="pledge-band">
         <h2>
-          Free for students. <em>Forever.</em>
+          Free for students. <em>Forever</em>
         </h2>
         <p>
-          That&apos;s our pledge. Citoya runs on organization Pro plans and community
+          That is our pledge. Citoya runs on organization Pro plans and community
           supporters, never on student fees. Every dollar keeps verified volunteering free for
           students.
         </p>
         <div className="pledge-btns">
           <Link className="btn-gold" href="/register">
-            Sign Up
+            Sign up
           </Link>
           <Link className="btn-ghost" href="/leaderboard">
-            Community Impact →
+            Community impact →
           </Link>
         </div>
       </div>

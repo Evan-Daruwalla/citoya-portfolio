@@ -1,12 +1,13 @@
 "use client";
 
+import { errorText } from "@/lib/errors";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
 import { canDelete, cleanCode } from "@/lib/guardian-code";
 
 type Action = "export" | "delete";
@@ -47,7 +48,7 @@ export function GuardianDataActions({
     try {
       await step();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setError(errorText(err, "We could not finish that request. Check your connection and try again."));
     } finally {
       setBusy(null);
     }

@@ -36,6 +36,10 @@ export interface User {
   guardian_consent_status: ConsentStatus;
   // The latest guardian invite's outcome: true sent, false failed, null never attempted.
   guardian_invite_sent?: boolean | null;
+  /** 2FA build (2026-10-13): a verified authenticator is attached. */
+  two_factor_enabled: boolean;
+  /** Admins and org accounts must have two-factor on; the app sends them to /security until it is. */
+  two_factor_required: boolean;
 }
 
 export interface ConsentContext {
@@ -50,6 +54,30 @@ export interface ConsentManageContext extends ConsentContext {
 export interface Token {
   access_token: string;
   token_type: string;
+}
+
+// ── Two-factor login (2FA build, 2026-10-13) ──
+/** What /auth/login answers when the password is right but a second factor is on. */
+export interface MfaChallenge {
+  mfa_required: true;
+  mfa_token: string;
+}
+
+export interface TwoFactorSetup {
+  secret_b32: string;
+  otpauth_uri: string;
+  qr_svg_data_uri: string;
+}
+
+/** Shown once; the server keeps only hashes. */
+export interface RecoveryCodes {
+  recovery_codes: string[];
+}
+
+export interface TwoFactorEnabled {
+  recovery_codes: string[];
+  /** A fresh token: turning two-factor on bumps token_version, which kills the old one. */
+  access_token: string;
 }
 
 // ── Opportunities & applications ──
@@ -391,6 +419,8 @@ export interface AdminOrg {
   reviewed_at: string | null;
   review_status: OrgReviewStatus;
   listing_count: number;
+  /** "free" (Community) or "pro"; support answers Pro first (SUPPORT_PROCEDURES P7). */
+  plan: string;
 }
 
 export type OrgReviewStatus = "pending" | "approved" | "rejected";

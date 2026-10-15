@@ -1,5 +1,6 @@
 "use client";
 
+import { errorText } from "@/lib/errors";
 import { BadgeCheck, Flag, Landmark, TriangleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -14,8 +15,8 @@ import type { AdminOrg, AuditLogEntry, RouteHitRead, TrafficSummary } from "@/li
 type Tab = "pending" | "all-orgs" | "reports" | "audit";
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: "pending", label: "Pending Orgs" },
-  { id: "all-orgs", label: "All Orgs" },
+  { id: "pending", label: "Pending orgs" },
+  { id: "all-orgs", label: "All orgs" },
   { id: "reports", label: "Reports" },
   { id: "audit", label: "Audit log" },
 ];
@@ -155,7 +156,7 @@ export default function AdminPage() {
       void approvedQ.mutate();
       void rejectedQ.mutate();
     } catch (err) {
-      setDecideError(err instanceof ApiError ? err.message : "Couldn't save that decision.");
+      setDecideError(errorText(err, "Could not save that decision."));
     } finally {
       setBusyId(null);
     }
@@ -173,7 +174,7 @@ export default function AdminPage() {
       setReopeningId(null);
       void auditQ.mutate();
     } catch (err) {
-      setReopenError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setReopenError(errorText(err, "We could not reopen that consent request. Check your connection and try again."));
     } finally {
       setReopenBusy(false);
     }
@@ -214,9 +215,9 @@ export default function AdminPage() {
     if (q.error && !q.data) {
       return (
         <div className="load-error">
-          <div className="ferr" role="alert">Couldn&apos;t load organizations.</div>
+          <div className="ferr" role="alert">Could not load organizations.</div>
           <div>
-            <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={q.retry}>Retry</button>
+            <button className="btn-s btn-sm" onClick={q.retry}>Retry</button>
           </div>
         </div>
       );
@@ -225,13 +226,14 @@ export default function AdminPage() {
     if (q.data.length === 0) return <div className="empty">{emptyText}</div>;
     return (
       <>
-      {q.error && <p className="progress-label">Couldn&apos;t refresh — showing the last list we loaded.</p>}
+      {q.error && <p className="progress-label">Could not refresh — showing the last list we loaded.</p>}
       <table className="tbl">
         <thead>
           <tr>
             <th scope="col">Organization</th>
             <th scope="col">Registered</th>
             <th scope="col" style={{ textAlign: "right" }}>Listings</th>
+            <th scope="col">Plan</th>
             <th scope="col">Reviewed</th>
             <th scope="col"><span className="sr-only">Action</span></th>
           </tr>
@@ -242,18 +244,19 @@ export default function AdminPage() {
               <td>
                 <strong>{o.full_name ?? "(no name)"}</strong>
                 <br />
-                <span style={{ fontSize: ".8rem", color: "var(--muted)" }}>{o.email}</span>
+                <span style={{ fontSize: "var(--fs-label)", color: "var(--muted)" }}>{o.email}</span>
               </td>
               <td>{fmtWhen(o.created_at)}</td>
               <td className="traffic-num" style={{ textAlign: "right" }}>{o.listing_count}</td>
+              <td>{o.plan === "pro" ? <strong>Pro</strong> : "Community"}</td>
               <td>{o.reviewed_at ? fmtWhen(o.reviewed_at) : "—"}</td>
               <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                 {offerReject && (
-                  <button className="btn-s" style={{ padding: "7px 14px", fontSize: ".8rem", marginRight: 6 }} disabled={busyId === o.id} onClick={() => decide(o, false)}>
+                  <button className="btn-s btn-sm" style={{ marginRight: 6 }} disabled={busyId === o.id} onClick={() => decide(o, false)}>
                     Reject
                   </button>
                 )}
-                <button className={approve ? "btn-p" : "btn-s"} style={{ padding: "7px 14px", fontSize: ".8rem" }} disabled={busyId === o.id} onClick={() => decide(o, approve)}>
+                <button className={approve ? "btn-p" : "btn-s"} disabled={busyId === o.id} onClick={() => decide(o, approve)}>
                   {actionLabel}
                 </button>
               </td>
@@ -273,9 +276,9 @@ export default function AdminPage() {
     if (q.error && !q.data) {
       body = (
         <div className="load-error">
-          <div className="ferr" role="alert">Couldn&apos;t load the audit log.</div>
+          <div className="ferr" role="alert">Could not load the audit log.</div>
           <div>
-            <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={q.retry}>Retry</button>
+            <button className="btn-s btn-sm" onClick={q.retry}>Retry</button>
           </div>
         </div>
       );
@@ -308,12 +311,12 @@ export default function AdminPage() {
                       <div style={{ marginTop: 6 }}>
                         {reopeningId === e.id ? (
                           <>
-                            <span style={{ fontSize: ".8rem" }}>Reopen this student&apos;s consent and re-email the guardian on file?</span>
+                            <span style={{ fontSize: "var(--fs-label)" }}>Reopen this student&apos;s consent and re-email the guardian on file?</span>
                             <div style={{ marginTop: 4 }}>
-                              <button className="btn-s" style={{ padding: "5px 12px", fontSize: ".78rem", marginRight: 6 }} disabled={reopenBusy} onClick={() => reopen(e.target as string)}>
+                              <button className="btn-s" style={{ padding: "5px 12px", fontSize: "var(--fs-micro)", marginRight: 6 }} disabled={reopenBusy} onClick={() => reopen(e.target as string)}>
                                 Confirm
                               </button>
-                              <button className="btn-s" style={{ padding: "5px 12px", fontSize: ".78rem" }} disabled={reopenBusy} onClick={() => setReopeningId(null)}>
+                              <button className="btn-s" style={{ padding: "5px 12px", fontSize: "var(--fs-micro)" }} disabled={reopenBusy} onClick={() => setReopeningId(null)}>
                                 Cancel
                               </button>
                             </div>
@@ -321,7 +324,7 @@ export default function AdminPage() {
                         ) : (
                           <button
                             className="btn-s"
-                            style={{ padding: "5px 12px", fontSize: ".78rem" }}
+                            style={{ padding: "5px 12px", fontSize: "var(--fs-micro)" }}
                             onClick={() => {
                               setReopeningId(e.id);
                               setReopenError(null);
@@ -336,7 +339,7 @@ export default function AdminPage() {
                   </td>
                   <td title={e.actor_id ?? undefined}>{e.actor_id ? short(e.actor_id) : "system"}</td>
                   <td title={e.target ?? undefined}>{e.target ? short(e.target) : "—"}</td>
-                  <td title={meta} style={{ fontFamily: "ui-monospace, monospace", fontSize: ".78rem" }}>
+                  <td title={meta} style={{ fontFamily: "ui-monospace, monospace", fontSize: "var(--fs-micro)" }}>
                     {meta.length > 120 ? `${meta.slice(0, 120)}…` : meta}
                   </td>
                 </tr>
@@ -352,10 +355,10 @@ export default function AdminPage() {
         {reopenError && <p className="ferr" role="alert">{reopenError}</p>}
         {body}
         <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-          <button className="btn-s" style={{ padding: "7px 14px", fontSize: ".8rem" }} disabled={auditOffset === 0} onClick={() => setAuditOffset(Math.max(0, auditOffset - AUDIT_PAGE))}>
+          <button className="btn-s btn-sm" disabled={auditOffset === 0} onClick={() => setAuditOffset(Math.max(0, auditOffset - AUDIT_PAGE))}>
             Newer
           </button>
-          <button className="btn-s" style={{ padding: "7px 14px", fontSize: ".8rem" }} disabled={!q.data || q.data.length < AUDIT_PAGE} onClick={() => setAuditOffset(auditOffset + AUDIT_PAGE)}>
+          <button className="btn-s btn-sm" disabled={!q.data || q.data.length < AUDIT_PAGE} onClick={() => setAuditOffset(auditOffset + AUDIT_PAGE)}>
             Older
           </button>
         </div>
@@ -367,11 +370,11 @@ export default function AdminPage() {
     <V1Shell>
       <div className="section">
         <div className="sec-tag">Admin</div>
-        <h2 className="sec-title" style={{ marginBottom: 24 }}>Citoya Dashboard</h2>
+        <h2 className="sec-title" style={{ marginBottom: 24 }}>Citoya dashboard</h2>
 
         {/* Honest banner. Org review is built (M15.2, 2026-09-22); the other two
             moderation tools are still not screens here, and it says so. */}
-        <div className="ferr" style={{ display: "block", background: "#fff8e1", borderColor: "#ffc107", color: "#795548", marginBottom: 24 }}>
+        <div className="ferr" style={{ display: "block", background: "var(--c-amber-tint)", borderColor: "var(--c-admin-banner-border)", color: "var(--c-admin-banner-fg)", marginBottom: 24 }}>
           Organization review works below. Reports arrive by email through the &ldquo;Report a
           concern&rdquo; links, and the audit log is on its own tab below.
         </div>
@@ -379,8 +382,8 @@ export default function AdminPage() {
         <div className="admin-grid">
           <div className="admin-stat"><div className="admin-stat-num">{error ? "—" : (stats?.opps ?? 0)}</div><div className="admin-stat-label">Opportunities</div></div>
           <div className="admin-stat"><div className="admin-stat-num">{error ? "—" : (stats?.orgs ?? 0)}</div><div className="admin-stat-label">Organizations</div></div>
-          <div className="admin-stat"><div className="admin-stat-num">{error ? "—" : (stats?.students ?? 0)}</div><div className="admin-stat-label">Ranked Students</div></div>
-          <div className="admin-stat"><div className="admin-stat-num">{pendingQ.data && !pendingQ.error ? pendingQ.data.length : "—"}</div><div className="admin-stat-label">Pending Review</div></div>
+          <div className="admin-stat"><div className="admin-stat-num">{error ? "—" : (stats?.students ?? 0)}</div><div className="admin-stat-label">Ranked students</div></div>
+          <div className="admin-stat"><div className="admin-stat-num">{pendingQ.data && !pendingQ.error ? pendingQ.data.length : "—"}</div><div className="admin-stat-label">Pending review</div></div>
           {/* A deliverability signal, not a to-do list: it carries no names, so nobody can
               be chased from it. Non-zero and rising means invites are landing in spam —
               docs/SUPPORT_PROCEDURES.md P6. */}
@@ -395,8 +398,8 @@ export default function AdminPage() {
         <section aria-labelledby="traffic-h" style={{ marginBottom: 28 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap", marginBottom: 14 }}>
             <div>
-              <h3 id="traffic-h" style={{ fontSize: "1.1rem", color: "var(--dark)", marginBottom: 4 }}>Site traffic</h3>
-              <p className="sec-sub" style={{ fontSize: ".82rem", margin: 0 }}>
+              <h3 id="traffic-h" style={{ fontSize: "var(--fs-h4)", color: "var(--dark)", marginBottom: 4 }}>Site traffic</h3>
+              <p className="sec-sub" style={{ fontSize: "var(--fs-label)", margin: 0 }}>
                 Successful API requests per route, counted server-side. Request counts only — no cookies, no per-person data.
               </p>
             </div>
@@ -412,9 +415,9 @@ export default function AdminPage() {
           {trafficError ? (
             <div className="load-error">
               <div className="empty-icon"><TriangleAlert size={40} strokeWidth={1.75} aria-hidden /></div>
-              <div className="ferr" role="alert">Couldn&apos;t load site traffic. Check your connection and try again.</div>
+              <div className="ferr" role="alert">Could not load site traffic. Check your connection and try again.</div>
               <div>
-                <button className="btn-s" style={{ padding: "9px 18px", fontSize: ".83rem" }} onClick={retryTraffic}>
+                <button className="btn-s btn-sm" onClick={retryTraffic}>
                   Retry
                 </button>
               </div>
@@ -463,14 +466,14 @@ export default function AdminPage() {
                 <tbody>
                   {top.map((r) => (
                     <tr key={`${r.method} ${r.route}`}>
-                      <td style={{ fontFamily: "ui-monospace, monospace", fontSize: ".8rem" }}>{r.route}</td>
+                      <td style={{ fontFamily: "ui-monospace, monospace", fontSize: "var(--fs-label)" }}>{r.route}</td>
                       <td>{r.method}</td>
                       <td className="traffic-num" style={{ textAlign: "right" }}>{r.count.toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <p style={{ fontSize: ".75rem", color: "var(--muted)", marginTop: 8 }}>
+              <p style={{ fontSize: "var(--fs-micro)", color: "var(--muted)", marginTop: 8 }}>
                 {distinct > TOP_ROUTES ? `Top ${TOP_ROUTES} of ${distinct} route/method pairs · ` : ""}
                 {traffic.since} to {traffic.until}, UTC days.
               </p>
@@ -488,7 +491,7 @@ export default function AdminPage() {
           {decideError && <p className="ferr" role="alert">{decideError}</p>}
           {tab === "pending" && (
             <>
-              <p className="sec-sub" style={{ fontSize: ".82rem", marginTop: 0 }}>
+              <p className="sec-sub" style={{ fontSize: "var(--fs-label)", marginTop: 0 }}>
                 <BadgeCheck size={14} strokeWidth={1.75} aria-hidden /> Oldest first. Approving shows the organization&apos;s listings to students at once; both decisions notify the organization.
               </p>
               {orgTable(pendingQ, true, "Approve", "No organizations are waiting for review.", true)}
@@ -496,9 +499,9 @@ export default function AdminPage() {
           )}
           {tab === "all-orgs" && (
             <>
-              <h3 style={{ fontSize: "1rem", color: "var(--dark)", margin: "0 0 8px" }}><Landmark size={16} strokeWidth={1.75} aria-hidden /> Approved</h3>
+              <h3 style={{ fontSize: "var(--fs-body)", color: "var(--dark)", margin: "0 0 8px" }}><Landmark size={16} strokeWidth={1.75} aria-hidden /> Approved</h3>
               {orgTable(approvedQ, false, "Withdraw approval", "No approved organizations.")}
-              <h3 style={{ fontSize: "1rem", color: "var(--dark)", margin: "20px 0 8px" }}>Rejected</h3>
+              <h3 style={{ fontSize: "var(--fs-body)", color: "var(--dark)", margin: "20px 0 8px" }}>Rejected</h3>
               {orgTable(rejectedQ, true, "Approve", "No rejected organizations.")}
             </>
           )}

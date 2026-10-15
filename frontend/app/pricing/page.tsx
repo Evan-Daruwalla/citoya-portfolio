@@ -1,6 +1,6 @@
 "use client";
 
-import { GraduationCap, Star } from "lucide-react";
+import { Check, GraduationCap, Star } from "lucide-react";
 import Link from "next/link";
 
 import { V1Shell } from "@/components/v1/v1-shell";
@@ -8,7 +8,7 @@ import { BILLING_LIVE } from "@/lib/flags";
 
 const FAQ = [
   {
-    q: "Why isn’t Citoya free for organizations too?",
+    q: "Why is Citoya not free for organizations too?",
     a: "The Community plan is free and always will be, and most small organizations never need more. Pro subscriptions from larger organizations fund hosting and verification, which is how students stay free.",
   },
   {
@@ -17,7 +17,7 @@ const FAQ = [
   },
   {
     q: "Can I cancel Pro anytime?",
-    a: "Yes. Downgrade with one click. Your existing listings stay live; you just can’t add new ones beyond the Community limit, and featured pins are released.",
+    a: "Yes. Downgrade with one click. Your existing listings stay live; you just cannot add new ones beyond the Community limit, and featured pins are released.",
   },
   {
     q: "How do I know an organization is legit?",
@@ -29,12 +29,12 @@ export default function PricingPage() {
   return (
     <V1Shell>
       <div className="section" style={{ textAlign: "center" }}>
-        <div className="sec-tag" style={{ justifyContent: "center" }}>For Organizations</div>
-        <h2 className="sec-title" style={{ fontSize: "2.4rem" }}>
-          Free for students. <em style={{ color: "var(--green-l)", fontStyle: "italic" }}>Fair</em> for organizations.
+        <div className="sec-tag" style={{ justifyContent: "center" }}>For organizations</div>
+        <h2 className="sec-title" style={{ fontSize: "var(--fs-h1)" }}>
+          Free for students. <em style={{ color: "var(--green-l)", fontStyle: "italic" }}>Fair</em> for organizations
         </h2>
         <p className="sec-sub" style={{ margin: "0 auto" }}>
-          Start free, upgrade when you’re ready to grow. Org plans fund the platform so students never have to pay.
+          Start free, upgrade when you are ready to grow. Org plans fund the platform so students never have to pay.
         </p>
 
         <div className="price-grid">
@@ -43,29 +43,26 @@ export default function PricingPage() {
             <div className="pc-price">$0<span> / forever</span></div>
             <div className="pc-blurb">Everything a small organization needs to recruit student volunteers.</div>
             <ul className="pc-list">
-              <li>Up to 3 active listings</li>
-              <li>Applicant management &amp; approvals</li>
-              <li>One-click hour verification</li>
-              {/* Not built yet (audit DY Med 20; PRD M17, 2026-10-05). Remove the marker when
-                  the item ships. */}
-              <li>Bulk hour verification</li>
-              <li>Direct messaging with volunteers</li>
-              <li>Volunteer roster CSV export</li>
-              <li>Public organization page with reviews</li>
-              <li>Skill endorsements for students</li>
+              <li><Check size={16} strokeWidth={1.75} aria-hidden />Up to 3 active listings</li>
+              <li><Check size={16} strokeWidth={1.75} aria-hidden />Applicant management and approvals</li>
+              <li><Check size={16} strokeWidth={1.75} aria-hidden />One-click hour verification</li>
+              <li><Check size={16} strokeWidth={1.75} aria-hidden />Bulk hour verification</li>
+              <li><Check size={16} strokeWidth={1.75} aria-hidden />Direct messaging with volunteers</li>
+              <li><Check size={16} strokeWidth={1.75} aria-hidden />Volunteer roster CSV export</li>
+              <li><Check size={16} strokeWidth={1.75} aria-hidden />Public organization page with reviews</li>
+              <li><Check size={16} strokeWidth={1.75} aria-hidden />Skill endorsements for students</li>
             </ul>
-            <div><Link className="btn-s" style={{ width: "100%", display: "block", textAlign: "center" }} href="/register">Start Free</Link></div>
+            <div><Link className="btn-s" style={{ width: "100%", display: "block", textAlign: "center" }} href="/register">Start free</Link></div>
           </div>
           <div className="price-card pro">
-            <div className="pc-flag">Most Popular</div>
             <div className="pc-name">Pro <Star size={16} strokeWidth={1.75} aria-hidden style={{ color: "var(--gold)" }} /></div>
             <div className="pc-price">$6.99<span> / month</span></div>
             <div className="pc-blurb">For organizations that run many programs and want to grow faster.</div>
             <ul className="pc-list">
-              <li>Everything in Community</li>
-              <li className="pc-star">Unlimited active listings</li>
-              <li className="pc-star">3 Featured listings, pinned to the top of search</li>
-              <li className="pc-star">Priority support <span style={{ color: "var(--muted)", fontSize: ".78em", marginLeft: 6 }}>Coming soon</span></li>
+              <li><Check size={16} strokeWidth={1.75} aria-hidden />Everything in Community</li>
+              <li><Check size={16} strokeWidth={1.75} aria-hidden />Unlimited active listings</li>
+              <li><Check size={16} strokeWidth={1.75} aria-hidden />3 featured listings, pinned to the top of search</li>
+              <li><Check size={16} strokeWidth={1.75} aria-hidden />Priority support <span style={{ color: "var(--muted)", fontSize: "var(--fs-micro)", marginLeft: 6 }}>Coming soon</span></li>
             </ul>
             <div>{BILLING_LIVE ? (
               <Link className="btn-p" style={{ width: "100%", display: "block", textAlign: "center" }} href="/register">Get Pro</Link>
@@ -76,12 +73,12 @@ export default function PricingPage() {
         </div>
 
         <div className="student-free-note">
-          <GraduationCap size={16} strokeWidth={1.75} aria-hidden /> <strong>Students never pay. Ever.</strong> Browsing, signing up, hour verification, awards, portfolios, and transcripts are free forever. That’s the whole point of Citoya.
+          <GraduationCap size={16} strokeWidth={1.75} aria-hidden /> <strong>Students never pay. Ever.</strong> Browsing, signing up, hour verification, awards, portfolios, and transcripts are free forever. That is the whole point of Citoya.
         </div>
-        <p style={{ fontSize: ".76rem", color: "var(--muted)", marginTop: 14 }}>
+        <p style={{ fontSize: "var(--fs-micro)", color: "var(--muted)", marginTop: 14 }}>
           {BILLING_LIVE
             ? "Pro is billed monthly through Stripe. See the Terms for cancellation and refunds."
-            : "Pro subscriptions aren’t open yet — every organization starts on the free Community plan. Pro features arrive after launch."}
+            : "Pro subscriptions are not open yet — every organization starts on the free Community plan. Pro features arrive after launch."}
         </p>
 
         <div className="faq-wrap">

@@ -23,6 +23,7 @@ import type {
   HoursWithOpportunity,
   LeaderboardEntry,
   Message,
+  MfaChallenge,
   MyAwards,
   MyGoals,
   Notification,
@@ -35,11 +36,14 @@ import type {
   PersonalEventInput,
   PublicPortfolio,
   PublicStats,
+  RecoveryCodes,
   Review,
   OrgAnalytics,
   OrgReviewStatus,
   Token,
   TrafficSummary,
+  TwoFactorEnabled,
+  TwoFactorSetup,
   User,
 } from "@/lib/types";
 
@@ -57,6 +61,11 @@ export const TOKEN_KEY = "citoya_token";
 // until a reload (audit DY Med 17, 2026-10-05).
 export const SESSION_EXPIRED_EVENT = "citoya:session-expired";
 
+// Dispatched on `window` when the server answers 403 MFA_ENROLLMENT_REQUIRED (an admin or
+// org account with two-factor still off), so auth-context can send the user to /security
+// (2FA build, 2026-10-13). A listener, not an import, for the same cycle reason as above.
+export const MFA_ENROLLMENT_REQUIRED_EVENT = "citoya:mfa-enrollment-required";
+
 export class ApiError extends Error {
   status: number;
   /** The backend's raw `detail`, before `humanizeDetail` turns it into a sentence. */
@@ -70,9 +79,9 @@ export class ApiError extends Error {
 
 async function request<T>(
   path: string,
-  options: RequestInit & { token?: string } = {}
+  options: RequestInit & { token?: string; keepSessionOn401?: boolean } = {}
 ): Promise<T> {
-  const { token, headers, ...rest } = options;
+  const { token, keepSessionOn401, headers, ...rest } = options;
   const res = await fetch(`${API_URL}${path}`, {
     ...rest,
     headers: {
@@ -87,7 +96,10 @@ async function request<T>(
     // rejected it (401 — expired, or invalidated by a logout/reset elsewhere),
     // drop it so the app hydrates logged-out instead of a confusing half-signed-in
     // state. Tokenless 401s (e.g. a failed login) attach no token and clear nothing.
-    if (res.status === 401 && token && typeof window !== "undefined") {
+    // `keepSessionOn401` (2FA build, 2026-10-13): the two-factor calls answer 401 "Invalid code"
+    // for a wrong code from a signed-in user whose token is fine; dropping the token there
+    // signed them out on a typo.
+    if (res.status === 401 && token && !keepSessionOn401 && typeof window !== "undefined") {
       localStorage.removeItem(TOKEN_KEY);
       window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
     }
@@ -97,6 +109,15 @@ async function request<T>(
       detail = body.detail ?? detail;
     } catch {
       // response wasn't JSON — fall back to statusText
+    }
+    if (
+      res.status === 403 &&
+      typeof window !== "undefined" &&
+      detail !== null &&
+      typeof detail === "object" &&
+      (detail as { code?: unknown }).code === "MFA_ENROLLMENT_REQUIRED"
+    ) {
+      window.dispatchEvent(new Event(MFA_ENROLLMENT_REQUIRED_EVENT));
     }
     throw new ApiError(res.status, humanizeDetail(detail), detail);
   }
@@ -123,8 +144,45 @@ export const api = {
 
   // `restore` answers the "Restore it?" prompt for an account inside its 48-hour
   // deletion window (2026-09-26); the backend ignores it on any other account.
+  // With two-factor on, a right password answers an MfaChallenge instead of a Token; the
+  // code step is `loginMfa` (2FA build, 2026-10-13).
   login: (input: { email: string; password: string; restore?: boolean }) =>
-    request<Token>("/auth/login", { method: "POST", body: JSON.stringify(input) }),
+    request<Token | MfaChallenge>("/auth/login", { method: "POST", body: JSON.stringify(input) }),
+  loginMfa: (input: { mfa_token: string; code: string; restore?: boolean }) =>
+    request<Token>("/auth/login/mfa", { method: "POST", body: JSON.stringify(input) }),
+
+  // Two-factor management (all signed in). Enable/disable answer a NEW token because they
+  // bump token_version; the caller must store it (auth-context `adoptToken`).
+  twoFactorSetup: (token: string) =>
+    request<TwoFactorSetup>("/auth/2fa/setup", { method: "POST", token }),
+  twoFactorEnable: (token: string, code: string) =>
+    request<TwoFactorEnabled>("/auth/2fa/enable", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+      token,
+      keepSessionOn401: true,
+    }),
+  twoFactorDisable: (token: string, password: string, code: string) =>
+    request<{ access_token: string }>("/auth/2fa/disable", {
+      method: "POST",
+      body: JSON.stringify({ password, code }),
+      token,
+      keepSessionOn401: true,
+    }),
+  // A wrong current password is a 403 (not 401), so no keepSessionOn401. Answers a NEW token.
+  changePassword: (token: string, current_password: string, new_password: string) =>
+    request<{ access_token: string }>("/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify({ current_password, new_password }),
+      token,
+    }),
+  twoFactorRecoveryCodes: (token: string, code: string) =>
+    request<RecoveryCodes>("/auth/2fa/recovery-codes", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+      token,
+      keepSessionOn401: true,
+    }),
 
   me: (token: string) => request<User>("/auth/me", { token }),
   // Server-side logout: invalidates the token (bumps token_version). Best-effort

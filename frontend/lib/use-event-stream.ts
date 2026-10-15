@@ -31,9 +31,13 @@ const AFFECTED_KEYS: Record<string, string[]> = {
 export function useEventStream() {
   const { user } = useAuth();
   const { mutate } = useSWRConfig();
+  // The id, not the user object: a profile refresh hands back a new object for the same
+  // person, and each one tore the stream down and opened a new one (2026-10-12, audit
+  // 2026-10-11 #40).
+  const userId = user?.id;
 
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
 
     let source: EventSource | null = null;
     let retry: ReturnType<typeof setTimeout> | null = null;
@@ -64,6 +68,11 @@ export function useEventStream() {
 
       source.addEventListener("ready", () => {
         delay = 1000; // a stream that actually opened resets the backoff
+        // Anything pushed while the stream was down (or between page load and connect) was
+        // missed, and focus revalidation is off: refresh what the events refresh.
+        for (const keys of Object.values(AFFECTED_KEYS)) {
+          for (const key of keys) void mutate(key);
+        }
       });
 
       for (const [event, keys] of Object.entries(AFFECTED_KEYS)) {
@@ -99,5 +108,5 @@ export function useEventStream() {
       if (retry) clearTimeout(retry);
       source?.close();
     };
-  }, [user, mutate]);
+  }, [userId, mutate]);
 }

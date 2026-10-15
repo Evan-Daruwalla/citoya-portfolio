@@ -9,11 +9,11 @@ export const metadata = { title: "Terms of Service — Citoya" };
 const draftBanner = {
   background: "var(--gold-pale)",
   border: "2px solid var(--gold)",
-  borderRadius: 8,
+  borderRadius: 6,
   padding: "14px 18px",
   marginBottom: 28,
   color: "var(--dark)",
-  fontSize: ".9rem",
+  fontSize: "var(--fs-sm)",
   lineHeight: 1.6,
 } as const;
 
@@ -36,8 +36,8 @@ const openClause = {
 // exactly the defect found on 2026-09-07, where `NEXT_PUBLIC_LEGAL_SIGNOFF_COMPLETE`
 // had no ARG and so could never clear the draft banner in a container. Two literals
 // edited in place cannot fail that way.
-const GOVERNING_STATE: string | null = null;
-const LEGAL_ENTITY_NAME: string | null = null;
+const GOVERNING_STATE: string | null = "Tennessee";
+const LEGAL_ENTITY_NAME: string | null = "Evan Daruwalla";
 
 // `LEGAL_SIGNOFF_COMPLETE` is a boolean and a boolean cannot see a bracket, so on
 // its own it let the page print "In effect" above a governing-law clause that still
@@ -60,7 +60,7 @@ export default function TermsPage() {
 
         {!IN_EFFECT && (
           <div style={draftBanner} role="note">
-            <strong style={{ display: "block", fontSize: ".95rem", marginBottom: 4, textTransform: "uppercase", letterSpacing: ".03em" }}>
+            <strong style={{ display: "block", fontSize: "var(--fs-body)", marginBottom: 4, textTransform: "uppercase", letterSpacing: ".03em" }}>
               Draft: pending legal review and sign-off
             </strong>
             This document is a working draft. It has <strong>not</strong> been reviewed by counsel and is
@@ -125,8 +125,8 @@ export default function TermsPage() {
             <p style={openClause} role="note">
               <strong>Not yet settled.</strong> The governing state and the legal entity that operates
               Citoya are still with a legal reviewer, so this clause is deliberately blank rather
-              than filled with a guess: [GOVERNING STATE] and [LEGAL ENTITY NAME]. Until
-              they are answered these Terms remain a draft and are not in effect.
+              than filled with a guess. Until
+              both are filled in, these Terms remain a draft and are not in effect.
             </p>
           )}
 

@@ -2,7 +2,7 @@ import type { User } from "./types";
 
 /** The consent banner's sentence, reused where a gated control is withheld. */
 export const CONSENT_GATED_COPY =
-  "You can browse opportunities, but you can't sign up until a parent or guardian approves your account.";
+  "You can browse opportunities, but you cannot sign up until a parent or guardian approves your account.";
 
 /**
  * Whole years old on `today`'s UTC date, from a "YYYY-MM-DD" dob (audit DY Low 39,
@@ -46,17 +46,17 @@ export function inviteState(user: Pick<User, "guardian_invite_sent">): InviteSta
 
 export const INVITE_COPY: Record<InviteState, { banner: string; welcome: string }> = {
   sent: {
-    banner: " We emailed them a link. If it hasn't arrived, ask them to check their spam or junk folder.",
+    banner: " We emailed them a link. If it has not arrived, ask them to check their spam or junk folder.",
     welcome:
       "We emailed your parent or guardian to approve your account. You can look around now. Signing up for opportunities unlocks once they approve.",
   },
   failed: {
-    banner: " We couldn't send them the approval email yet. Press Resend to try again.",
+    banner: " We could not send them the approval email yet. Press Resend to try again.",
     welcome:
-      "We couldn't email your parent or guardian yet. Open your dashboard and press Resend approval email. You can look around now; signing up unlocks once they approve.",
+      "We could not email your parent or guardian yet. Open your dashboard and press Resend approval email. You can look around now; signing up unlocks once they approve.",
   },
   unknown: {
-    banner: " If they haven't received an approval email, ask them to check their spam folder, or press Resend.",
+    banner: " If they have not received an approval email, ask them to check their spam folder, or press Resend.",
     welcome:
       "Your parent or guardian needs to approve your account. You can look around now. Signing up for opportunities unlocks once they approve.",
   },

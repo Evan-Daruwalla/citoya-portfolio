@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 // audit DY Low 36, 2026-10-07 (Evan's decision, 2026-10-07): keep /portfolio and
 // /portfolio/[id] out of search indexes; they hold a student's personal record.
 export const metadata = {
-  title: "Service Transcript — Citoya",
+  title: "Service transcript — Citoya",
   robots: { index: false, follow: false },
 };
 

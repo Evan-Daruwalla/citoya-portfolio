@@ -9,6 +9,11 @@ and the emil-design-eng micro-interaction polish rules all live in **`ui.md`**.
 Shared chrome (`components/site-header.tsx`/`site-footer.tsx`) wraps all pages
 via `app/layout.tsx`.
 
+User-visible words (2026-10-13, fix pass 6): no contractions; "log in / log out / sign up" as
+verbs and "login" as a noun; the feature is "two-factor login"; sentence case; "and" not "&";
+errors never say "Invalid" and go through `lib/errors.ts` `errorText(err, fallback)`. Pinned by
+`backend/tests/test_frontend_copy_rules.py` (frontend text) and `test_email_body_shape.py`.
+
 ## Backend feature slice (in this order)
 model (`app/models/x.py` + register in `app/models/__init__.py`) → Alembic revision (autogenerate
 then read it) → schema (`app/schemas/x.py`) → route module (`app/api/routes/x.py` + **`include_router`
@@ -181,7 +186,7 @@ component.
   request**, and up to `pool_timeout` (**30 s**) when the pool saturates. Blocking the
   loop delays EVERY concurrent request, including ones that never touch the DB. Fixed
   with `await run_in_threadpool(_record_hit_blocking, …)`.
-- The 69 sync (`def`) routes (and 2 `async`; AST recount 2026-09-23, was 75) are fine — Starlette already runs those in the 40-worker
+- The ~~69~~ ~~91~~ 97 sync (`def`) routes (and 2 `async`; recount 2026-10-13 after the six 2FA routes, landing check; 91 on 2026-10-11, 69 on 2026-09-23 and 75 before) are fine — Starlette already runs those in the 40-worker
   threadpool. The hazard is specific to `async def` bodies, of which the middlewares are
   the main ones. **Measured limits, not assumed:** threadpool 40 (anyio default),
   `QueuePool` `pool_size` 5 + `max_overflow` 10 = **15 connections**, `pool_timeout` 30 s.
@@ -249,6 +254,25 @@ component.
   pass**, which is why the fix was briefly weakened.
 - Any future client-side cache inherits this: identity change ⇒ drop everything.
   (Moved from `security.md` 2026-09-03 — a frontend rule, not a security one.)
+
+## Email never leaves while the request holds a pooled connection (2026-10-09 / 2026-10-10)
+
+Evan's decision 9A (record ET); finished in record EW. `SessionLocal` expires rows on commit,
+so `send_email(to=user.email, ...)` after a commit RELOADS the row and holds a connection for
+the whole send (up to ~22 s), which can exhaust the pool. Three shapes, pick one:
+- **A notification:** `create_notification` (`app/services/notifications.py`) queues the email;
+  `get_db` (`app/db/session.py`) sends it after `db.close()`. A rollback drops it.
+- **A direct email whose result nothing reads:** read every value into locals, then after the
+  route's LAST commit call `defer_email(db, to, subject, body, ..., failure_action=..., send=send_email)`.
+  A failure writes the given audit action on a fresh session. A rollback does NOT drop it, so
+  never call it before the commit it announces. Used by the org-review notice, password reset
+  and the guardian step-up code.
+- **A send whose result changes state** (the guardian invite's `guardian_invite_sent` and 503;
+  the approval email's 8A hash clear): read into locals, `release_connection(db)`, then send
+  synchronously.
+Pinned by `tests/test_inline_sends_released.py` (one-connection pool, asserts zero checked out
+inside the fake `send_email`) and `tests/test_decisions_listings.py`. Before any Throttle, also
+call `release_connection(db)`.
 
 ## Hard rules
 **Definition of done, commit/push, and BLOCKED-ON-EVAN live in `CLAUDE.md` (always loaded) —
