@@ -5,8 +5,8 @@ for the Citoya v2 rewrite; talks to the FastAPI backend in the sibling `../backe
 
 > **Status: M1–M10 + M12 + M13 + v1 exact-copy complete; frontier = M11 public launch,
 > BLOCKED-ON-EVAN** (updated 2026-08-25 — see `../HANDOFF.md` for the live snapshot).
-> Guardian consent (M5) and billing (M8, Stripe test mode) both ship; TOTP MFA stays
-> explicitly out of scope for this plan. `backend/README.md` has the exact scope status
+> Guardian consent (M5) and billing (M8, Stripe test mode) both ship; two-factor login (authenticator
+> app) shipped 2026-10-13, required for organizations and admins. `backend/README.md` has the exact scope status
 > per slice, but it is **private-tree only** — it is not shipped to the public
 > `citoya-portfolio` mirror, so a mirror reader following this pointer will find
 > nothing there.
@@ -33,7 +33,7 @@ npx shadcn@latest add button card input dialog
 They land in `components/ui/` and import the `cn()` helper from `@/lib/utils`.
 
 ## Layout
-29 routes under `app/` as of 2026-08-25 (`find app -name page.tsx | wc -l`):
+33 routes under `app/` as of 2026-10-16 (`find app -name page.tsx | wc -l`):
 ```
 app/
   layout.tsx              # root layout — wraps children in AuthProvider
@@ -63,6 +63,10 @@ app/
   terms/page.tsx
   welcome/page.tsx
   admin/page.tsx
+  hours/report/page.tsx
+  logout/page.tsx
+  organizations/[id]/page.tsx
+  security/page.tsx
   portfolio/
     page.tsx               # own public-portfolio toggle
     [id]/page.tsx           # public transcript by id

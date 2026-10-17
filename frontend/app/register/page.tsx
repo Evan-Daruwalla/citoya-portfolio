@@ -8,7 +8,7 @@ import { useState, type FormEvent } from "react";
 
 import { TurnstileWidget } from "@/components/turnstile-widget";
 import { V1Shell } from "@/components/v1/v1-shell";
-import { useAuth } from "@/lib/auth-context";
+import { AccountCreatedLoginFailed, useAuth } from "@/lib/auth-context";
 import { ageFromDobUtc } from "@/lib/consent";
 
 export default function RegisterPage() {
@@ -26,6 +26,7 @@ export default function RegisterPage() {
   const [turnstileReset, setTurnstileReset] = useState(0);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showLoginLink, setShowLoginLink] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // Audit DY Low 39, 2026-10-07: the server's UTC age rule (lib/consent.ts), not a local-date
@@ -36,6 +37,7 @@ export default function RegisterPage() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    setShowLoginLink(false);
     setSubmitting(true);
     try {
       await register({
@@ -50,8 +52,13 @@ export default function RegisterPage() {
       });
       router.push("/welcome");
     } catch (err) {
-      setError(errorText(err, "We could not create your account. Check your connection and try again."));
-      setTurnstileReset((n) => n + 1);
+      if (err instanceof AccountCreatedLoginFailed) {
+        setError("Your account was created, but we could not log you in. Log in with your email and password.");
+        setShowLoginLink(true);
+      } else {
+        setError(errorText(err, "We could not create your account. Check your connection and try again."));
+        setTurnstileReset((n) => n + 1);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -96,7 +103,7 @@ export default function RegisterPage() {
             </div>
 
             <form onSubmit={onSubmit}>
-              {error && <div className="ferr" role="alert" style={{ display: "block" }}>{error}</div>}
+              {error && <div className="ferr" role="alert" style={{ display: "block" }}>{error}{showLoginLink && <>{" "}<Link href="/login" style={{ color: "var(--green)", fontWeight: 600 }}>Log in</Link></>}</div>}
               <div className="fr">
                 <label htmlFor="register-name">{role === "org" ? "Organization name" : "Full name (legal)"} <span style={{ color: "var(--red)" }}>*</span></label>
                 <input id="register-name" className="fc" required value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={role === "org" ? "Green Roots Community Garden" : "Alex Johnson"} />

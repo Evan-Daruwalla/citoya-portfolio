@@ -51,6 +51,9 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/** Thrown by `register` when the account exists but the automatic login after it failed. */
+export class AccountCreatedLoginFailed extends Error {}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -143,8 +146,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .me(token)
         .then(setUser)
         .catch((err) => {
-          // Same rule as the hydrate effect: only a rejected token is an answer.
-          if (err instanceof ApiError && err.status === 401) setUser(null);
+          // Unlike the hydrate effect (401 only), any error clears: the user shown is already known stale.
+          setUser(null);
         });
     }
     // An admin/org API call answered 403 MFA_ENROLLMENT_REQUIRED: go set two-factor up.
@@ -215,7 +218,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function register(input: RegisterInput) {
     await api.register(input);
-    await login(input.email, input.password);
+    try {
+      await login(input.email, input.password);
+    } catch {
+      throw new AccountCreatedLoginFailed("account created, login failed");
+    }
   }
 
   async function refresh() {

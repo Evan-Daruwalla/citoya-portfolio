@@ -8,7 +8,7 @@
  * solved token to the parent via onToken (null on expiry/error so the parent can
  * re-require a fresh solve). The paired server key gates the actual request.
  */
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 const SCRIPT_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
@@ -32,11 +32,17 @@ declare global {
 }
 
 function loadScript(): Promise<void> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     if (window.turnstile) return resolve();
+    // On a load failure, remove the tag so a later mount can try again.
+    const fail = (el: HTMLScriptElement) => () => {
+      el.remove();
+      reject(new Error("turnstile script failed to load"));
+    };
     const existing = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
     if (existing) {
       existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", fail(existing), { once: true });
       return;
     }
     const s = document.createElement("script");
@@ -45,6 +51,7 @@ function loadScript(): Promise<void> {
     s.async = true;
     s.defer = true;
     s.addEventListener("load", () => resolve(), { once: true });
+    s.addEventListener("error", fail(s), { once: true });
     document.head.appendChild(s);
   });
 }
@@ -60,6 +67,7 @@ export function TurnstileWidget({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | undefined>(undefined);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
     if (!SITE_KEY) return;
@@ -74,6 +82,10 @@ export function TurnstileWidget({
         "error-callback": () => onToken(null),
       });
       widgetIdRef.current = widgetId;
+    }, () => {
+      if (cancelled) return;
+      setLoadFailed(true);
+      onToken(null);
     });
     return () => {
       cancelled = true;
@@ -94,5 +106,8 @@ export function TurnstileWidget({
   }, [resetSignal, onToken]);
 
   if (!SITE_KEY) return null;
+  if (loadFailed) {
+    return <p role="alert" className="ferr">The security check did not load. Check your connection and refresh the page.</p>;
+  }
   return <div ref={ref} className="fr" style={{ marginBottom: 4 }} />;
 }

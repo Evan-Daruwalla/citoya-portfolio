@@ -217,7 +217,7 @@ still carries `'unsafe-inline'`. The load-bearing invariants remain: **zero
 `dangerouslySetInnerHTML`** (re-verified with two tools in the 2026-08-05 audit) and
 the production CSP's `connect-src` allowlist blocking off-origin exfiltration.
 
-**Status is unchanged: still Proposed.** Evan's sign-off is BLOCKED-ON-EVAN. The
+**Status is unchanged: still Proposed.** Evan's sign-off is BLOCKED-ON-EVAN. *(Note 2026-10-16, audit FW: this was true when written on 2026-08-06; the ADR was ACCEPTED on 2026-08-31, see the header and the "Accepted" section below.)* The
 implementation side of PRD criterion "documented token-storage decision ... implemented
 before launch" is now satisfied; the sign-off side is not.
 

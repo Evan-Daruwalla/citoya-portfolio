@@ -272,7 +272,8 @@ export default function OrgDashboardPage() {
     for (const h of hours)
       rows.push([h.student_name ?? "", h.student_email ?? "", hoursTitle(h), h.occurrence_date ?? "", String(h.hours), h.status]);
     const csv = toCsv(rows);
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    // Leading byte-order mark so Excel reads the file as UTF-8 and keeps accented names (audit FW, 2026-10-16).
+    const url = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
     a.href = url;
     a.download = "volunteer-roster.csv";

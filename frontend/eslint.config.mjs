@@ -36,11 +36,11 @@ const config = [
       // --- React Compiler rules, new in eslint-plugin-react-hooks v7 ---
       // The Next 15->16 bump took this plugin from v5 to v7, which added rules
       // the previous gate never ran. Demoted to `warn` (visible in the log, not
-      // blocking) rather than fixed or silenced, because the 12 sites they flag
+      // blocking) rather than fixed or silenced, because the 7 sites they flag
       // are load-bearing auth/data-fetch code and the frontend has no test
       // runner — the only regression check is clicking through by hand.
       //
-      // `set-state-in-effect` (8 sites) is largely a false positive for this
+      // `set-state-in-effect` (3 sites) is largely a false positive for this
       // app's shape: the JWT lives in localStorage (ADR-0001), which cannot be
       // read during render without breaking SSR hydration, so seeding state
       // inside an effect is the correct pattern here, not a mistake. Complying
