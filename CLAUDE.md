@@ -14,7 +14,3 @@ adding its name to the list does. Treat that addition as a review step.
 credential in this file", never "should this document exist outside the
 project". A zero-secret document can still be unpublishable — research notes,
 legal analysis, audit findings, anything addressed to a reviewer.
-
-Never include "Co-Authored-By: Claude Opus 5.5 (or any other model) <noreply@anthropic.com>" in any commits or pushes
-
-Long tasks on Opus 5.5 follow the plan-split rule in the workspace-root CLAUDE.md (Opus plans and reasons; up to 3 Sonnet 5.5 agents run the code part; not for scheduled runs).

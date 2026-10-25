@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Cloudflare Turnstile signup bot defense (M11.1). Renders NOTHING and reports no
+ * Cloudflare Turnstile bot defense (M11.1): register, forgot, and login after 3 failed attempts (2026-10-21). Renders NOTHING and reports no
  * token unless NEXT_PUBLIC_TURNSTILE_SITE_KEY is set, so local dev / CI (no key)
  * behave exactly as before. Uses the plain script API — no npm dependency. Loads
  * api.js once (explicit render), renders the widget into a div, and reports the

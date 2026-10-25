@@ -161,7 +161,7 @@ export default function Home() {
           <div className="hiw-step">
             <div className="hiw-icon"><Search size={26} strokeWidth={1.75} aria-hidden /></div>
             <h4>Discover and filter</h4>
-            <p>Search by skill, ZIP code, cause, date, or time commitment. Read reviews from other volunteers before you sign up.</p>
+            <p>Search by skill, cause, date, or time commitment. Read reviews from other volunteers before you sign up.</p>
           </div>
           <div className="hiw-step">
             <div className="hiw-icon"><CalendarDays size={26} strokeWidth={1.75} aria-hidden /></div>
@@ -201,8 +201,8 @@ export default function Home() {
           </div>
           <div className="bento-card">
             <div className="bi"><MapPin size={26} strokeWidth={1.75} aria-hidden /></div>
-            <h4>Near you</h4>
-            <p>Real-time distance from your location or ZIP code.</p>
+            <h4>Local organizations</h4>
+            <p>Browse organizations in your community and their open opportunities.</p>
           </div>
           <div className="bento-card gold b-2x1">
             <div className="bi"><Trophy size={26} strokeWidth={1.75} aria-hidden /></div>

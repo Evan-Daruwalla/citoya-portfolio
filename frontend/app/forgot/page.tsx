@@ -6,10 +6,12 @@ import { useState, type FormEvent } from "react";
 
 import { TurnstileWidget } from "@/components/turnstile-widget";
 import { V1Shell } from "@/components/v1/v1-shell";
+import { HoneypotField } from "@/components/honeypot-field";
 import { api } from "@/lib/api";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
+  const [website, setWebsite] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   // audit DY Med 18, 2026-10-05: bumped on a failed submit to reset the spent token.
   const [turnstileReset, setTurnstileReset] = useState(0);
@@ -22,7 +24,7 @@ export default function ForgotPasswordPage() {
     setError(null);
     setSubmitting(true);
     try {
-      const res = await api.forgotPassword(email, turnstileToken ?? undefined);
+      const res = await api.forgotPassword(email, turnstileToken ?? undefined, website);
       setMessage(res.message);
     } catch (err) {
       setError(errorText(err, "We could not send the reset email. Check your connection and try again."));
@@ -45,6 +47,7 @@ export default function ForgotPasswordPage() {
               <p style={{ fontSize: "var(--fs-sm)", color: "var(--muted)" }}>{message}</p>
             ) : (
               <form onSubmit={onSubmit}>
+                <HoneypotField value={website} onChange={setWebsite} />
                 {error && <div className="ferr" role="alert" style={{ display: "block" }}>{error}</div>}
                 <p style={{ fontSize: "var(--fs-sm)", color: "var(--muted)", marginBottom: 14 }}>
                   Enter your account email and we will send you a reset link (valid for 1 hour).

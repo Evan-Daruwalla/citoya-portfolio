@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState, type FormEvent } from "react";
 
+import { HoneypotField } from "@/components/honeypot-field";
+import { TurnstileWidget } from "@/components/turnstile-widget";
 import { V1Shell } from "@/components/v1/v1-shell";
 import { ApiError, useAuth } from "@/lib/auth-context";
 import { pendingDeletionDeadline } from "@/lib/pending-deletion";
@@ -20,6 +22,13 @@ function LoginInner() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Bot defenses (2026-10-21): hidden honeypot, plus a Turnstile check shown only after the
+  // server answers CAPTCHA_REQUIRED (3 failed logins in 15 minutes). It can also appear in the
+  // "Restore it?" card (2026-10-24, audit GE #9).
+  const [website, setWebsite] = useState("");
+  const [captchaRequired, setCaptchaRequired] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileReset, setTurnstileReset] = useState(0);
   // An account inside its deletion window: the login answered 409 with the deadline,
   // and the card asks "Restore it?" instead of showing the form.
   const [pendingUntil, setPendingUntil] = useState<Date | null>(null);
@@ -57,16 +66,34 @@ function LoginInner() {
     setError(null);
     setSubmitting(true);
     try {
-      const step = await login(email, password, { restore });
+      const step = await login(email, password, {
+        restore,
+        website,
+        ...(turnstileToken ? { turnstile_token: turnstileToken } : {}),
+      });
       if ("mfaToken" in step) {
         setMfaToken(step.mfaToken);
+        setTurnstileToken(null);
         setCode("");
         setUseRecovery(false);
       } else {
         router.push(dashboardPath(step.user));
       }
     } catch (err) {
-      showPendingOrError(err);
+      const d = err instanceof ApiError && err.status === 401 ? err.detail : null;
+      if (d && typeof d === "object" && (d as { code?: unknown }).code === "CAPTCHA_REQUIRED") {
+        setCaptchaRequired(true);
+        // A restore attempt keeps its card open: clearing it sent the user back through the
+        // login form and the same 409, a loop (2026-10-24, audit GE #9).
+        if (!restore) setPendingUntil(null);
+        const m = (d as { message?: unknown }).message;
+        setError(typeof m === "string" && m ? m : "Please complete the security check, then log in again.");
+      } else {
+        showPendingOrError(err);
+      }
+      // A Turnstile token is single use: reset after any failed submit once the check is showing.
+      if (captchaRequired) setTurnstileReset((n) => n + 1);
+      setTurnstileToken(null);
     } finally {
       setSubmitting(false);
     }
@@ -139,8 +166,14 @@ function LoginInner() {
                   {" "}Restore it?
                 </p>
                 {error && <div className="ferr" role="alert" style={{ display: "block" }}>{error}</div>}
+                {captchaRequired && !mfaToken && <TurnstileWidget onToken={setTurnstileToken} resetSignal={turnstileReset} />}
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button className="btn-p" type="button" onClick={() => void (mfaToken ? verifyCode(true) : signIn(true))} disabled={submitting}>
+                  <button
+                    className="btn-p"
+                    type="button"
+                    onClick={() => void (mfaToken ? verifyCode(true) : signIn(true))}
+                    disabled={submitting || (captchaRequired && !mfaToken && !turnstileToken)}
+                  >
                     {submitting ? "Restoring…" : "Restore"}
                   </button>
                   <button className="btn-s" type="button" onClick={keepDeleted} disabled={submitting}>
@@ -198,6 +231,7 @@ function LoginInner() {
                   </div>
                 )}
                 <form onSubmit={onSubmit}>
+                  <HoneypotField value={website} onChange={setWebsite} />
                   {error && <div className="ferr" role="alert" style={{ display: "block" }}>{error}</div>}
                   <div className="fr">
                     <label htmlFor="login-email">Email</label>
@@ -207,6 +241,7 @@ function LoginInner() {
                     <label htmlFor="login-password">Password</label>
                     <input id="login-password" className="fc" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
                   </div>
+                  {captchaRequired && <TurnstileWidget onToken={setTurnstileToken} resetSignal={turnstileReset} />}
                   <button className="fsubmit" style={{ width: "100%" }} type="submit" disabled={submitting}>
                     {submitting ? "Logging in…" : "Log in"}
                   </button>

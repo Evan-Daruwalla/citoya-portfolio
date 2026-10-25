@@ -6,10 +6,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
+import { HoneypotField } from "@/components/honeypot-field";
 import { TurnstileWidget } from "@/components/turnstile-widget";
 import { V1Shell } from "@/components/v1/v1-shell";
 import { AccountCreatedLoginFailed, useAuth } from "@/lib/auth-context";
-import { ageFromDobUtc } from "@/lib/consent";
+import { ageFromDob } from "@/lib/consent";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -21,6 +22,7 @@ export default function RegisterPage() {
   const [dob, setDob] = useState("");
   const [guardianName, setGuardianName] = useState("");
   const [guardianEmail, setGuardianEmail] = useState("");
+  const [website, setWebsite] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   // audit DY Med 18, 2026-10-05: bumped on a failed submit to reset the spent token.
   const [turnstileReset, setTurnstileReset] = useState(0);
@@ -29,9 +31,10 @@ export default function RegisterPage() {
   const [showLoginLink, setShowLoginLink] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Audit DY Low 39, 2026-10-07: the server's UTC age rule (lib/consent.ts), not a local-date
+  // Audit DY Low 39, 2026-10-07: the server's age rule (lib/consent.ts; America/Chicago date since
+  // 2026-10-24, audit GE #20), not a local-date
   // copy, so a form filled in near midnight agrees with what the server will decide.
-  const age = dob && !Number.isNaN(Date.parse(dob)) ? ageFromDobUtc(dob) : null;
+  const age = dob && !Number.isNaN(Date.parse(dob)) ? ageFromDob(dob) : null;
   const isMinor = role === "student" && age !== null && age < 18;
 
   async function onSubmit(e: FormEvent) {
@@ -49,6 +52,7 @@ export default function RegisterPage() {
         ...(isMinor ? { guardian_name: guardianName, guardian_email: guardianEmail } : {}),
         ...(turnstileToken ? { turnstile_token: turnstileToken } : {}),
         accepted_terms: true,
+        website,
       });
       router.push("/welcome");
     } catch (err) {
@@ -103,6 +107,7 @@ export default function RegisterPage() {
             </div>
 
             <form onSubmit={onSubmit}>
+              <HoneypotField value={website} onChange={setWebsite} />
               {error && <div className="ferr" role="alert" style={{ display: "block" }}>{error}{showLoginLink && <>{" "}<Link href="/login" style={{ color: "var(--green)", fontWeight: 600 }}>Log in</Link></>}</div>}
               <div className="fr">
                 <label htmlFor="register-name">{role === "org" ? "Organization name" : "Full name (legal)"} <span style={{ color: "var(--red)" }}>*</span></label>

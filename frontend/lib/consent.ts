@@ -5,12 +5,13 @@ export const CONSENT_GATED_COPY =
   "You can browse opportunities, but you cannot sign up until a parent or guardian approves your account.";
 
 /**
- * Whole years old on `today`'s UTC date, from a "YYYY-MM-DD" dob (audit DY Low 39,
- * 2026-10-07). Extracted from `consentGated` unchanged so the register form's age uses
- * the same UTC rule as the server's gate, not the browser's local date.
+ * Whole years old on `today`'s America/Chicago calendar date, from a "YYYY-MM-DD" dob
+ * (audit DY Low 39, 2026-10-07). The same zone as the server's `age_on` since 2026-10-24
+ * (Evan, audit GE #20; it was the UTC date), never the browser's local date.
  */
-export function ageFromDobUtc(dob: string, today: Date = new Date()): number {
-  const day = today.toISOString().slice(0, 10);
+export function ageFromDob(dob: string, today: Date = new Date()): number {
+  // en-CA formats as YYYY-MM-DD.
+  const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago" }).format(today);
   let age = Number(day.slice(0, 4)) - Number(dob.slice(0, 4));
   if (day.slice(5) < dob.slice(5, 10)) age -= 1;
   return age;
@@ -18,7 +19,7 @@ export function ageFromDobUtc(dob: string, today: Date = new Date()): number {
 
 /**
  * The backend's `consent_blocks`, mirrored so the UI never offers a write the gate
- * refuses (K3 + F12, audit 2026-09-24). Same boundaries: 18 TODAY (UTC) is ungated,
+ * refuses (K3 + F12, audit 2026-09-24). Same boundaries: 18 TODAY (Central) is ungated,
  * no dob is gated. `tests/test_frontend_consent_gate.py` checks it against the backend.
  */
 export function consentGated(
@@ -26,7 +27,7 @@ export function consentGated(
 ): boolean {
   if (!user || user.role !== "student") return false;
   if (!user.dob) return true;
-  if (ageFromDobUtc(user.dob) >= 18) return false;
+  if (ageFromDob(user.dob) >= 18) return false;
   return user.guardian_consent_status !== "verified";
 }
 

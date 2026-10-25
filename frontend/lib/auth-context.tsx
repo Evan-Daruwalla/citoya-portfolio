@@ -28,6 +28,7 @@ type RegisterInput = {
   guardian_email?: string;
   turnstile_token?: string;
   accepted_terms?: boolean;
+  website?: string;
 };
 
 interface AuthContextValue {
@@ -37,7 +38,7 @@ interface AuthContextValue {
   login: (
     email: string,
     password: string,
-    opts?: { restore?: boolean },
+    opts?: { restore?: boolean; turnstile_token?: string; website?: string },
   ) => Promise<{ mfaToken: string } | { user: User }>;
   loginMfa: (mfaToken: string, code: string, opts?: { restore?: boolean }) => Promise<User>;
   /** Store the new token enable/disable return (they bump token_version) and reload the user. */
@@ -180,8 +181,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user, pathname, router]);
 
-  async function login(email: string, password: string, opts?: { restore?: boolean }) {
-    const res = await api.login({ email, password, restore: opts?.restore });
+  async function login(
+    email: string,
+    password: string,
+    opts?: { restore?: boolean; turnstile_token?: string; website?: string },
+  ) {
+    const res = await api.login({
+      email,
+      password,
+      restore: opts?.restore,
+      turnstile_token: opts?.turnstile_token,
+      website: opts?.website,
+    });
     if ("mfa_required" in res) return { mfaToken: res.mfa_token };
     const { access_token } = res;
     localStorage.setItem(TOKEN_KEY, access_token);

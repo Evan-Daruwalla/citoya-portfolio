@@ -140,13 +140,14 @@ export const api = {
     guardian_email?: string;
     turnstile_token?: string;
     accepted_terms?: boolean;
+    website?: string;
   }) => request<User>("/auth/register", { method: "POST", body: JSON.stringify(input) }),
 
   // `restore` answers the "Restore it?" prompt for an account inside its 48-hour
   // deletion window (2026-09-26); the backend ignores it on any other account.
   // With two-factor on, a right password answers an MfaChallenge instead of a Token; the
   // code step is `loginMfa` (2FA build, 2026-10-13).
-  login: (input: { email: string; password: string; restore?: boolean }) =>
+  login: (input: { email: string; password: string; restore?: boolean; turnstile_token?: string; website?: string }) =>
     request<Token | MfaChallenge>("/auth/login", { method: "POST", body: JSON.stringify(input) }),
   loginMfa: (input: { mfa_token: string; code: string; restore?: boolean }) =>
     request<Token>("/auth/login/mfa", { method: "POST", body: JSON.stringify(input) }),
@@ -200,10 +201,10 @@ export const api = {
     request<void>("/auth/me", { method: "DELETE", body: JSON.stringify({ password }), token }),
 
   // Password reset (M4)
-  forgotPassword: (email: string, turnstile_token?: string) =>
+  forgotPassword: (email: string, turnstile_token?: string, website?: string) =>
     request<{ message: string }>("/auth/forgot", {
       method: "POST",
-      body: JSON.stringify({ email, turnstile_token }),
+      body: JSON.stringify({ email, turnstile_token, website }),
     }),
   resetPassword: (token: string, new_password: string) =>
     request<{ message: string }>("/auth/reset", {
