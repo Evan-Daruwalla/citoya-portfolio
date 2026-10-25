@@ -5,9 +5,9 @@ import Link from "next/link";
 // designed (M13.5 skeletons, per-section error+Retry); a mistyped URL was the
 // one that was not.
 //
-// Deliberately NOT wrapped in `V1Shell`. Nothing in the app calls `notFound()`,
-// so this renders only for an UNMATCHED url — and `isV1Route` never matches one
-// of those, which means `SiteHeader`/`SiteFooter` from the root layout are both
+// Deliberately NOT wrapped in `V1Shell`. The one `notFound()` call (the hidden leaderboard,
+// 2026-10-25) takes /leaderboard out of `isV1Route` too, so this renders like an UNMATCHED
+// url — and `isV1Route` never matches one of those, which means `SiteHeader`/`SiteFooter` from the root layout are both
 // already on the page. Adding V1Shell here put a second nav and a second footer
 // on the screen (caught in the browser, 2026-09-05). The bare `.v1` div is only
 // for styling: every class below is a `.v1 .foo` descendant rule in `v1.css`.
