@@ -7,6 +7,7 @@ import { useState } from "react";
 import { V1Shell } from "@/components/v1/v1-shell";
 import { api } from "@/lib/api";
 import { errorText } from "@/lib/errors";
+import { LEADERBOARD_ENABLED } from "@/lib/flags";
 import { TOKEN_KEY, useAuth } from "@/lib/auth-context";
 import { useAuthedQuery } from "@/lib/use-api";
 import type { HoursWithOpportunity } from "@/lib/types";
@@ -192,11 +193,13 @@ export default function PortfolioPage() {
           <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", fontWeight: 400, textTransform: "none", letterSpacing: 0, marginTop: 14 }}>
             <input type="checkbox" checked={nameVisible} onChange={(e) => toggleNameVisible(e.target.checked)} style={{ width: 15, height: 15, marginTop: 3, accentColor: "var(--green)" }} />
             <span style={{ fontSize: "var(--fs-sm)", color: "var(--text)", fontWeight: 600 }}>
-              Show my name on the leaderboard and on my reviews
+              {LEADERBOARD_ENABLED ? "Show my name on the leaderboard and on my reviews" : "Show my name on my reviews"}
             </span>
           </label>
           <p style={{ fontSize: "var(--fs-micro)", color: "var(--muted)", margin: "2px 0 0 25px" }}>
-            When off, you are left off the public leaderboard and your reviews show as &quot;A Citoya student&quot;.
+            {LEADERBOARD_ENABLED
+              ? "When off, you are left off the public leaderboard and your reviews show as \"A Citoya student\"."
+              : "When off, your reviews show as \"A Citoya student\"."}
           </p>
           {nameError && <div className="ferr" role="alert" style={{ display: "block", marginTop: 10 }}>{nameError}</div>}
         </div>

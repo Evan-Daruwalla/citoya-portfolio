@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { LEADERBOARD_ENABLED } from "@/lib/flags";
 import { isV1Route } from "@/lib/v1-routes";
 
 export function SiteFooter() {
@@ -17,9 +18,11 @@ export function SiteFooter() {
           <Link href="/discover" className="transition-colors hover:text-foreground">
             Discover
           </Link>
-          <Link href="/leaderboard" className="transition-colors hover:text-foreground">
-            Leaderboard
-          </Link>
+          {LEADERBOARD_ENABLED && (
+            <Link href="/leaderboard" className="transition-colors hover:text-foreground">
+              Leaderboard
+            </Link>
+          )}
         </nav>
       </div>
     </footer>

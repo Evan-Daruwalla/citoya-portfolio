@@ -8,6 +8,7 @@ import logo from "@/public/logo.png";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { LEADERBOARD_ENABLED } from "@/lib/flags";
 import { useAuthedQuery } from "@/lib/use-api";
 import { useEventStream } from "@/lib/use-event-stream";
 import { isV1Route } from "@/lib/v1-routes";
@@ -53,12 +54,14 @@ export function SiteHeader() {
             >
               Discover
             </Link>
-            <Link
-              href="/leaderboard"
-              className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-            >
-              Leaderboard
-            </Link>
+            {LEADERBOARD_ENABLED && (
+              <Link
+                href="/leaderboard"
+                className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                Leaderboard
+              </Link>
+            )}
           </nav>
         </div>
 

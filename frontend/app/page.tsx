@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { V1Shell } from "@/components/v1/v1-shell";
 import { api } from "@/lib/api";
+import { LEADERBOARD_ENABLED } from "@/lib/flags";
 import { usePublicQuery } from "@/lib/use-api";
 
 export default function Home() {
@@ -241,9 +242,11 @@ export default function Home() {
           <Link className="btn-gold" href="/register">
             Sign up
           </Link>
-          <Link className="btn-ghost" href="/leaderboard">
-            Community impact →
-          </Link>
+          {LEADERBOARD_ENABLED && (
+            <Link className="btn-ghost" href="/leaderboard">
+              Community impact →
+            </Link>
+          )}
         </div>
       </div>
     </V1Shell>

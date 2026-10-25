@@ -204,3 +204,9 @@ Not a replacement for polling: **nothing on this site has ever polled** (verifie
   redemption requires an approved signup covering that date + guardian consent; throttled.
 - Awards: verified-hour thresholds ported from v1 (`app/core/awards.py`).
 - Guardian consent statuses: not_required / pending / verified / declined / revoked.
+
+- **Public leaderboard HIDDEN since 2026-10-25 (Evan: "remove the leaderboard for now", record GJ).**
+  `settings.LEADERBOARD_ENABLED` (default false; tests set true in conftest) makes GET /leaderboard
+  404; `frontend/lib/flags.ts` `LEADERBOARD_ENABLED` 404s the page and drops the header, footer,
+  v1 nav/footer and homepage links and the sitemap entry; the name toggle reads "Show my name on
+  my reviews". `/stats` and `ranked_student_conditions` stay live. Flip both flags to restore.

@@ -37,3 +37,8 @@ export const IS_STAGING =
 // could go stale in up to 3 of the 4 spots silently (pre-mortem 2026-09-05, NT2).
 // Bump this ONE constant, not the pages, on any content edit to either page.
 export const LEGAL_LAST_REVISED = "2026-10-24";
+
+// The public leaderboard is hidden since 2026-10-25 (Evan: "remove the leaderboard
+// for now"). The backend's LEADERBOARD_ENABLED makes its API 404 too; set both
+// to true to bring it back.
+export const LEADERBOARD_ENABLED = false;

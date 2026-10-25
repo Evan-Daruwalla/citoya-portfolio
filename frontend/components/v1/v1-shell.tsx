@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import { ReportConcern } from "@/components/report-concern";
 import logo from "@/public/logo.png";
 import { useAuth } from "@/lib/auth-context";
+import { LEADERBOARD_ENABLED } from "@/lib/flags";
 import { dashboardPath } from "@/lib/v1-routes";
 
 // Exact v1 nav + footer chrome (transcribed from ../ServeLocal website/public/index.html),
@@ -43,7 +44,7 @@ export function V1Shell({ children }: { children: React.ReactNode }) {
           {nl("/", "Home", pathname === "/")}
           {nl("/discover", "Find opportunities", pathname === "/discover")}
           {nl(dashHref, "Dashboard", !!user && pathname === dashHref)}
-          {nl("/leaderboard", "Community", pathname === "/leaderboard")}
+          {LEADERBOARD_ENABLED && nl("/leaderboard", "Community", pathname === "/leaderboard")}
         </div>
         <div className="nav-right">
           {/* Render nothing until auth resolves — asserting "signed out" before
@@ -96,7 +97,7 @@ export function V1Shell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="footer-links">
             <Link href="/discover">Find opportunities</Link>
-            <Link href="/leaderboard">Community</Link>
+            {LEADERBOARD_ENABLED && <Link href="/leaderboard">Community</Link>}
             <Link href="/for-organizations">For organizations</Link>
             <Link href="/pricing">Pricing</Link>
             <Link href="/donate">Support us</Link>

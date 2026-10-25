@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-import { IS_STAGING } from "@/lib/flags";
+import { IS_STAGING, LEADERBOARD_ENABLED } from "@/lib/flags";
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -22,7 +22,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // Staging advertises nothing: robots.ts already disallows it, and a sitemap would
   // hand a crawler the URL list anyway.
   if (IS_STAGING) return [];
-  return ROUTES.map((route) => ({
+  return ROUTES.filter((route) => LEADERBOARD_ENABLED || route !== "/leaderboard").map((route) => ({
     url: `${BASE_URL}${route}`,
   }));
 }
