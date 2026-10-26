@@ -22,6 +22,12 @@ export default function ConsentDecisionPage() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirmDecline, setConfirmDecline] = useState(false);
+  const confirmRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    if (confirmDecline) confirmRef.current?.focus();
+  }, [confirmDecline]);
 
   useEffect(() => {
     const fromHash = window.location.hash.replace(/^#/, "");
@@ -79,14 +85,31 @@ export default function ConsentDecisionPage() {
                 opportunity until you approve. You can revoke your approval anytime.
               </p>
               {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
-              <div className="flex gap-3">
-                <Button onClick={() => decide("approve")} disabled={busy}>
-                  Approve
-                </Button>
-                <Button variant="outline" onClick={() => decide("decline")} disabled={busy}>
-                  Decline
-                </Button>
-              </div>
+              {confirmDecline ? (
+                <>
+                  <p ref={confirmRef} tabIndex={-1} className="text-sm">
+                    Declining deletes this student&apos;s account and your email address right away.
+                    If it was a mistake, the student can sign up again.
+                  </p>
+                  <div className="flex gap-3">
+                    <Button variant="outline" onClick={() => decide("decline")} disabled={busy}>
+                      Yes, decline and delete
+                    </Button>
+                    <Button onClick={() => setConfirmDecline(false)} disabled={busy}>
+                      Go back
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex gap-3">
+                  <Button onClick={() => decide("approve")} disabled={busy}>
+                    Approve
+                  </Button>
+                  <Button variant="outline" onClick={() => setConfirmDecline(true)} disabled={busy}>
+                    Decline
+                  </Button>
+                </div>
+              )}
             </>
           ) : error ? (
             <p className="text-sm text-destructive" role="alert">{error}</p>

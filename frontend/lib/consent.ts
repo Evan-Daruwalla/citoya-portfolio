@@ -47,18 +47,18 @@ export function inviteState(user: Pick<User, "guardian_invite_sent">): InviteSta
 
 export const INVITE_COPY: Record<InviteState, { banner: string; welcome: string }> = {
   sent: {
-    banner: " We emailed them a link. If it has not arrived, ask them to check their spam or junk folder.",
+    banner: " We emailed them a link. If it has not arrived, ask them to check their spam or junk folder. If no one approves within 7 days of the latest request, this account is deleted.",
     welcome:
-      "We emailed your parent or guardian to approve your account. You can look around now. Signing up for opportunities unlocks once they approve.",
+      "We emailed your parent or guardian to approve your account. You can look around now. Signing up for opportunities unlocks once they approve. If no one approves within 7 days of the latest request, this account is deleted.",
   },
   failed: {
-    banner: " We could not send them the approval email yet. Press Resend to try again.",
+    banner: " We could not send them the approval email yet. Press Resend to try again. If no one approves within 7 days of the latest request, this account is deleted.",
     welcome:
-      "We could not email your parent or guardian yet. Open your dashboard and press Resend approval email. You can look around now; signing up unlocks once they approve.",
+      "We could not email your parent or guardian yet. Open your dashboard and press Resend approval email. You can look around now; signing up unlocks once they approve. If no one approves within 7 days of the latest request, this account is deleted.",
   },
   unknown: {
-    banner: " If they have not received an approval email, ask them to check their spam folder, or press Resend.",
+    banner: " If they have not received an approval email, ask them to check their spam folder, or press Resend. If no one approves within 7 days of the latest request, this account is deleted.",
     welcome:
-      "Your parent or guardian needs to approve your account. You can look around now. Signing up for opportunities unlocks once they approve.",
+      "Your parent or guardian needs to approve your account. You can look around now. Signing up for opportunities unlocks once they approve. If no one approves within 7 days of the latest request, this account is deleted.",
   },
 };
